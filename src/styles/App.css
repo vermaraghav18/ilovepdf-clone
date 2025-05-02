@@ -1,0 +1,9 @@
+/* src/styles/App.css */
+
+/* This is just a basic CSS file to avoid build errors. 
+   We'll add global styles later if needed. */
+   body {
+    margin: 0;
+    padding: 0;
+  }
+  
