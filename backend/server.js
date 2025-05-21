@@ -1142,21 +1142,24 @@ const compressPdfWithGhostscript = (inputPath, outputPath, level) => {
     recommended: '/ebook'
   }[level] || '/ebook';
 
-  // ✅ Cross-platform Ghostscript path
   const ghostscriptPath = process.platform === 'win32'
     ? `"C:\\Program Files\\gs\\gs10.05.1\\bin\\gswin64c.exe"`
-    : 'gs'; // Default Linux/Unix command
+    : 'gs';
 
   const command = `${ghostscriptPath} -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${quality} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${inputPath}"`;
 
-  console.log("🟢 Running Ghostscript Command:", command); // Debug log
+  console.log("🧪 Ghostscript path:", ghostscriptPath);
+  console.log("🧪 Full command:", command);
+
   try {
     execSync(command);
   } catch (err) {
-    console.error("❌ Ghostscript failed:", err.message);
-    throw new Error("Ghostscript compression failed. Make sure 'gs' is installed on Linux.");
+    console.warn("⚠️ Ghostscript not available or failed on this platform.");
+    // Do not crash the server
+    return;
   }
 };
+
 
 app.post('/compress', uploadPDF.single('file'), async (req, res) => {
   try {
