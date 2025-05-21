@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: ilovepdf-clone
+    env: node
+    plan: free
+    buildCommand: ""
+    startCommand: "node server.js"
+    dockerfilePath: ./backend/Dockerfile
