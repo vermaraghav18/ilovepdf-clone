@@ -1140,7 +1140,10 @@ const compressPdfWithGhostscript = (inputPath, outputPath, level) => {
     recommended: '/ebook'
   }[level] || '/ebook';
 
-  const ghostscriptPath = `"C:\\Program Files\\gs\\gs10.05.1\\bin\\gswin64c.exe"`; // ✅ Full path with double quotes
+ const ghostscriptPath = process.platform === 'win32'
+  ? `"C:\\Program Files\\gs\\gs10.05.1\\bin\\gswin64c.exe"`
+  : 'gs';
+ // ✅ Full path with double quotes
 
   const command = `${ghostscriptPath} -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${quality} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${inputPath}"`;
 
