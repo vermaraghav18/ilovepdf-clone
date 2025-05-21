@@ -1,37 +1,31 @@
+// src/pages/PdfToExcelPage.jsx
 import React, { useState } from 'react';
-import axios from 'axios'; // Add axios to make API requests
-import '../styles/ComponentStyles.css';
+import axios from 'axios';
+import '../styles/PdfToExcel.css';
 
 function PdfToExcelPage() {
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [file, setFile] = useState(null);
   const [message, setMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // To show loading spinner
+  const [loading, setLoading] = useState(false);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setSelectedFile(file);
-    setMessage(`📂 Selected file: ${file?.name}`);
-  };
-
-  const handleConvertClick = async () => {
-    if (!selectedFile) {
-      setMessage('❌ Please select a PDF file to convert.');
+  const handleUpload = async () => {
+    if (!file) {
+      setMessage('❌ Please select a PDF file.');
       return;
     }
 
-    setMessage('📊 Converting PDF to Excel...');
-    setIsLoading(true); // Start loading
+    setLoading(true);
+    setMessage('⏳ Converting... Please wait.');
 
     const formData = new FormData();
-    formData.append('file', selectedFile);
+    formData.append('pdf', file);
 
     try {
-      const response = await axios.post('http://localhost:5000/convert-pdf-to-excel', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        responseType: 'blob', // Expect a file to be returned as a blob
+      const res = await axios.post('http://localhost:5000/convert-pdf-to-excel', formData, {
+        responseType: 'blob',
       });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', 'converted.xlsx');
@@ -39,46 +33,35 @@ function PdfToExcelPage() {
       link.click();
       link.remove();
 
-      setMessage(`✅ Successfully converted "${selectedFile.name}" to Excel!`);
-    } catch (error) {
-      console.error('Error during conversion:', error);
-      setMessage('❌ Something went wrong while converting the PDF to Excel.');
+      setMessage('✅ Excel file downloaded!');
+    } catch (err) {
+      console.error(err);
+      setMessage('❌ Conversion failed. Please check the file or try again.');
     } finally {
-      setIsLoading(false); // Stop loading spinner
+      setLoading(false);
     }
   };
 
   return (
-    <div className="tool-page">
-      <h2>PDF to Excel</h2>
-      <p>Convert tables in PDFs into editable Excel spreadsheets.</p>
-      <div className="upload-section">
-        <input
-          type="file"
-          accept="application/pdf"
-          onChange={handleFileChange}
-        />
-        <button
-          className="upload-button"
-          onClick={handleConvertClick}
-          disabled={isLoading} // Disable button during loading
-        >
-          {isLoading ? 'Converting...' : 'Convert to Excel'}
-        </button>
-      </div>
+    <div className="pdf-to-excel-container">
+      <h2>📄 Convert PDF to Excel</h2>
 
-      {message && (
-        <div className="upload-feedback">
-          <p>{message}</p>
-        </div>
-      )}
+      <label htmlFor="pdf-upload" className="upload-box">
+        {file ? file.name : '📁 Click or Drag to Upload PDF'}
+      </label>
+      <input
+        id="pdf-upload"
+        type="file"
+        accept="application/pdf"
+        onChange={e => setFile(e.target.files[0])}
+        className="hidden-input"
+      />
 
-      {isLoading && (
-        <div className="loading-spinner">
-          {/* You can replace this with a custom spinner if you prefer */}
-          <p>Loading...</p>
-        </div>
-      )}
+      <button className="convert-btn" onClick={handleUpload} disabled={loading}>
+        {loading ? 'Converting...' : 'Convert to Excel'}
+      </button>
+
+      <p className="conversion-message">{message}</p>
     </div>
   );
 }

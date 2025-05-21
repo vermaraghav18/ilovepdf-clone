@@ -1,23 +1,30 @@
+// src/pages/ProtectPdfFile.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
+import '../styles/ProtectPdfStyles.css';
 
-const ProtectPdfPage = () => {
+const ProtectPdfFile = () => {
   const [file, setFile] = useState(null);
   const [password, setPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Handle file input
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const selected = e.target.files[0];
+    setFile(selected);
+    setMessage(`📂 Selected: ${selected?.name}`);
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!file || !password) {
-      alert("Please upload a PDF and enter a password.");
+      setMessage('❌ Please upload a PDF and enter a password.');
       return;
     }
+
+    setMessage('🔒 Protecting PDF...');
+    setLoading(true);
 
     const formData = new FormData();
     formData.append('pdf', file);
@@ -25,45 +32,54 @@ const ProtectPdfPage = () => {
 
     try {
       const response = await axios.post('http://localhost:5000/protect-pdf', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        responseType: 'blob', // Handling binary file response
+        headers: { 'Content-Type': 'multipart/form-data' },
+        responseType: 'blob',
       });
 
-      // Create a download link for the protected PDF
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = 'protected.pdf';
       link.click();
+
+      setMessage('✅ PDF protected and downloaded!');
     } catch (error) {
-      console.error('Error protecting PDF:', error);
-      alert('Failed to protect PDF. Please try again.');
+      console.error('Protection error:', error);
+      setMessage('❌ Failed to protect PDF.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div>
-      <h1>Protect Your PDF</h1>
-      <form onSubmit={handleSubmit}>
+    <div className="protect-pdf-container">
+      <h2 className="page-heading">Protect PDF</h2>
+      <p className="subtext">Add a password to your PDF to secure it from unauthorized access.</p>
+
+      <form className="protect-form" onSubmit={handleSubmit}>
         <input
           type="file"
           accept="application/pdf"
           onChange={handleFileChange}
-          required
+          className="input-field"
         />
+
         <input
           type="password"
           placeholder="Enter password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required
+          className="input-field"
         />
-        <button type="submit">Protect PDF</button>
+
+        <button type="submit" className="protect-btn" disabled={loading}>
+          {loading ? 'Protecting...' : 'Protect PDF'}
+        </button>
+
+        {message && <p className="message">{message}</p>}
       </form>
     </div>
   );
 };
 
-export default ProtectPdfPage;
+export default ProtectPdfFile;

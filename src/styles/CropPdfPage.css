@@ -1,0 +1,36 @@
+/* src/styles/CropPdfPage.css */
+
+.crop-container {
+  text-align: center;
+  padding: 20px;
+}
+
+.iframe-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 600px;
+  height: 800px;
+  margin-top: 20px;
+  border: 1px solid #ccc;
+}
+
+.pdf-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  pointer-events: none; /* disable interaction with iframe */
+}
+
+.crop-box {
+  position: absolute;
+  border: 2px dashed #28a745;
+  background-color: rgba(40, 167, 69, 0.2);
+  pointer-events: none;
+}
+
+button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-weight: bold;
+  cursor: pointer;
+}

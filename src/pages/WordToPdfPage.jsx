@@ -1,3 +1,4 @@
+// src/pages/WordToPdfPage.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
 import '../styles/ComponentStyles.css';
@@ -19,8 +20,8 @@ function WordToPdfPage() {
       return;
     }
 
-    setMessage('📊 Converting Word to PDF...');
-    setIsLoading(true); // Start loading
+    setMessage('📄 Converting Word to PDF...');
+    setIsLoading(true);
 
     const formData = new FormData();
     formData.append('file', selectedFile);
@@ -44,40 +45,36 @@ function WordToPdfPage() {
       console.error('Error during conversion:', error);
       setMessage('❌ Something went wrong while converting the Word to PDF.');
     } finally {
-      setIsLoading(false); // Stop loading spinner
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="tool-page">
-      <h2>Word to PDF</h2>
-      <p>Convert Word documents into PDF files.</p>
-      <div className="upload-section">
-        <input
-          type="file"
-          accept=".docx"
-          onChange={handleFileChange}
-        />
-        <button
-          className="upload-button"
-          onClick={handleConvertClick}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Converting...' : 'Convert to PDF'}
-        </button>
-      </div>
+    <div className="merge-pdf-container">
+      <h2 className="page-heading">Convert Word to PDF</h2>
 
-      {message && (
-        <div className="upload-feedback">
-          <p>{message}</p>
-        </div>
-      )}
+      <label htmlFor="word-upload" className="custom-upload-box">
+        📄 Drag & Drop or Click to Upload Word File
+      </label>
+      <input
+        id="word-upload"
+        type="file"
+        accept=".docx"
+        onChange={handleFileChange}
+        className="file-input hidden-input"
+      />
 
-      {isLoading && (
-        <div className="loading-spinner">
-          <p>Loading...</p>
-        </div>
-      )}
+      <p className="message">{message}</p>
+
+      <button
+        className="merge-btn"
+        onClick={handleConvertClick}
+        disabled={isLoading}
+      >
+        {isLoading ? 'Converting...' : 'Convert to PDF'}
+      </button>
+
+      {isLoading && <div className="loading-spinner"></div>}
     </div>
   );
 }

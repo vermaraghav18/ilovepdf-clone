@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';  // Import axios for making API calls
+import axios from 'axios';
 import '../styles/ComponentStyles.css';
 
 function PowerpointToPdfPage() {
@@ -30,14 +30,13 @@ function PowerpointToPdfPage() {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        responseType: 'blob', // Ensure to receive the PDF as a Blob
+        responseType: 'blob',
       });
 
-      // Create a link element to trigger the file download
       const blob = response.data;
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = 'converted.pdf';  // Set the filename for the downloaded PDF
+      link.download = 'converted.pdf';
       link.click();
 
       setMessage(`✅ Successfully converted "${selectedFile.name}" to PDF!`);
@@ -50,25 +49,27 @@ function PowerpointToPdfPage() {
   };
 
   return (
-    <div className="tool-page">
-      <h2>PowerPoint to PDF</h2>
-      <p>Convert your PowerPoint presentations to PDF documents.</p>
-      <div className="upload-section">
+    <div className="merge-pdf-container">
+      <h2 className="page-heading">PowerPoint to PDF</h2>
+      <div className="file-upload-container">
         <input
           type="file"
           accept=".ppt,.pptx,application/vnd.ms-powerpoint"
           onChange={handleFileChange}
+          className="file-input"
         />
-        <button className="upload-button" onClick={handleConvertClick} disabled={loading}>
-          {loading ? 'Converting...' : 'Convert to PDF'}
-        </button>
+        <p className="message">{message}</p>
       </div>
 
-      {message && (
-        <div className="upload-feedback">
-          <p>{message}</p>
-        </div>
-      )}
+      <button
+        className="merge-btn"
+        onClick={handleConvertClick}
+        disabled={loading}
+      >
+        {loading ? 'Converting...' : 'Convert to PDF'}
+      </button>
+
+      {loading && <div className="loading-spinner"></div>}
     </div>
   );
 }

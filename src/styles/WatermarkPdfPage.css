@@ -1,0 +1,71 @@
+.watermark-pdf-page {
+  padding: 20px;
+}
+
+.pdf-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.pdf-page {
+  position: relative;
+  width: fit-content;
+  margin: auto;
+}
+
+.pdf-page img {
+  max-width: 100%;
+  display: block;
+}
+
+.watermark {
+  .watermark {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: move;
+  user-select: none;
+}
+
+}
+
+.watermark.selected {
+  border: 2px solid #00bfff;
+}
+
+
+.preview-container {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.preview-container canvas {
+  border: 1px solid #ccc;
+  margin: auto;
+}
+
+.preview-container {
+  margin-top: 2rem;
+  position: relative;
+  text-align: center;
+}
+
+.preview-container canvas {
+  border: 1px solid #ccc;
+  margin: auto;
+}
+
+.draggable-watermark {
+  position: absolute;
+  color: #000;
+  font-weight: bold;
+  pointer-events: auto;
+  cursor: grab;
+  user-select: none;
+  z-index: 10;
+}
+
+

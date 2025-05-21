@@ -1,20 +1,28 @@
-const fs = require('fs');
-const pdfLib = require('pdf-lib');
+const { exec } = require("child_process");
+const path = require("path");
 
-async function repairPdf(inputPdfPath, outputPdfPath) {
-  try {
-    const pdfBytes = fs.readFileSync(inputPdfPath);
-    console.log('PDF loaded successfully');
+/**
+ * Repairs a corrupted PDF using qpdf.
+ * @param {string} inputPath - The path to the uploaded corrupted PDF.
+ * @param {string} outputPath - The path to save the repaired PDF.
+ * @returns {Promise<void>}
+ */
+function repairPdf(inputPath, outputPath) {
+  return new Promise((resolve, reject) => {
+    const command = `qpdf "${inputPath}" "${outputPath}"`;
 
-    const pdfDoc = await pdfLib.PDFDocument.load(pdfBytes);
-    const repairedPdfBytes = await pdfDoc.save();
+    console.log("Running command:", command);
 
-    fs.writeFileSync(outputPdfPath, repairedPdfBytes);
-    console.log('PDF repaired successfully:', outputPdfPath);
-  } catch (err) {
-    console.error('Error during PDF repair:', err);
-    throw new Error('Failed to repair the PDF');
-  }
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error("❌ QPDF Repair Error:", stderr);
+        return reject(new Error("QPDF failed to repair the PDF."));
+      }
+
+      console.log("✅ QPDF Repair Success");
+      resolve();
+    });
+  });
 }
 
 module.exports = { repairPdf };

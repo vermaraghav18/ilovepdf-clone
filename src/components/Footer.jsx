@@ -5,7 +5,7 @@ import '../styles/ComponentStyles.css';
 function Footer() {
   return (
     <footer className="footer">
-      <p>© 2025 I Love PDF Clone. All rights reserved.</p>
+      <p></p>
     </footer>
   );
 }

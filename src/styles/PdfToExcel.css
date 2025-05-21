@@ -1,0 +1,44 @@
+.pdf-to-excel-container {
+  max-width: 500px;
+  margin: 60px auto;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  background: #f6f9ff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.custom-upload-box {
+  display: block;
+  background: #e2edff;
+  border: 2px dashed #2d77f0;
+  padding: 20px;
+  margin: 20px 0;
+  cursor: pointer;
+  font-weight: bold;
+  color: #2d77f0;
+}
+
+.file-input {
+  display: none;
+}
+
+.convert-btn {
+  background-color: #2d77f0;
+  color: white;
+  padding: 10px 20px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.convert-btn:disabled {
+  background-color: #9bbaf0;
+  cursor: not-allowed;
+}
+
+.conversion-message {
+  margin-top: 15px;
+  font-weight: 500;
+}

@@ -1,25 +1,31 @@
-// src/components/Navbar.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import '../styles/ComponentStyles.css';
+import '../styles/ComponentStyles.css'; // Ensure your styles are imported
 
 function Navbar() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
   return (
     <nav className="navbar">
       <div className="navbar-logo">
-        <Link to="/">I ❤️ PDF</Link>
       </div>
-      <ul className="navbar-links">
-        <li><Link to="/merge_pdf">Merge PDF</Link></li>
-        <li><Link to="/split_pdf">Split PDF</Link></li>
-        <li><Link to="/compress_pdf">Compress PDF</Link></li>
-        <li><Link to="/pdf_to_word">PDF to Word</Link></li>
-        <li><Link to="/edit_pdf">Edit PDF</Link></li>
-        {/* Later you can add dropdown for "All PDF Tools" like original iLovePDF */}
-      </ul>
+
+      <div className={`navbar-links ${isMenuOpen ? 'open' : ''}`}>
+      
+      </div>
+
+      {/* Hamburger Menu Icon */}
+      <div className="hamburger-menu" onClick={toggleMenu}>
+        <div className="bar"></div>
+        <div className="bar"></div>
+        <div className="bar"></div>
+      </div>
     </nav>
   );
 }
 
 export default Navbar;
-

@@ -1,102 +1,1988 @@
-/* src/styles/ComponentStyles.css */
-
-/* Reset basic margins and paddings */
+/* Global Styles */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f0f4f8; /* Light background color for the body */
+  margin: 0; /* Ensuring there is no margin */
+  padding: 0; /* Removing any extra padding */
+}
+
+/* Notification Banner */
+/* Notification Banner */
+.notification-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: #ff5733; /* Change this to your desired background color */
+  color: white;
+  padding: 10px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Ensure it's on top of other content */
+}
+
+/* Each vertical banner */
+.vertical-banner {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  flex-shrink: 0;
+  height: fit-content;
+}
+
+.vertical-nhs-ad {
+  position: relative;
+  max-width: 260px;
+  height: 92vh;
+  overflow: hidden;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.nhs-bg-image {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  top: 0;
+  left: 0;
+}
+
+.nhs-logo-wrapper {
+  z-index: 2;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}
+
+
+.nhs-logo-updated {
+  margin-top: 2.5rem;
+  width: 170px;
+  filter: drop-shadow(0px 2px 6px rgb(0, 0, 0), 0.4);
+  margin-bottom:  0.2rem;
+}
+/* Content Section */
+.ad-content-updated {
+  z-index: 2;
+  max-width: 280px;
+  padding: 0 1rem;
+}
+
+.ad-heading-updated {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin-top: 0;
+  color: #111;
+  text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.2);
+}
+.ad-description-updated {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #222;
+  line-height: 1.4;
+  text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
+}
+/* Call to Action Button */
+.ad-button-updated {
+  position:relative;
+  padding: 10px 24px;
+  background: linear-gradient(to right, #ff6f00, #f57c00);
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  top: 1.2rem;
+  border-radius: 30px;
+  border: 1px solid white;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: all 0.3s ease;
+}
+
+.ad-button-updated:hover {
+  background: linear-gradient(to right, #f57c00, #ff9100);
+  transform: scale(1.05);
+}
+
+/* Doctor Image */
+.doctor-centered-image {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  z-index: 1;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.4));
+}
+
+
+.vertical-ad-wrapper {
+  display: flex;
+  flex-direction: column; /* Stack ads vertically */
+  align-items: center;
+  gap:10rem;
+  margin-top: 1.5rem;
+
+}
+
+
+
+.vertical-nhs-ad {
+  position: relative;
+  width: 100%;
+  max-width: 320px; /* controls banner width */
+  height: 100vh;
+  overflow: hidden;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+
+.nhs-bg-image {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  top: 0;
+  left: 0;
+}
+
+.ad-overlay {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(255, 128, 0, 0.85), rgba(255, 255, 255, 0.6));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  padding: 0rem 0.5rem ; /* More top spacing, room for doctor below */
+
+}
+
+
+/* ✅ Doctor image inside overlay but below text */
+.doctor-bg-behind {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 500px;
+  opacity: 0.98;
+  z-index: 1;
+}
+
+.ad-content {
+  position: relative;
+  z-index: 2; /* ON TOP of doctor */
+  max-width: 320px;
+}
+
+.nhs-logo {
+  width: 80px;
+  margin-bottom: 0.6rem;
+}
+
+.ad-heading {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 0.6rem;
+}
+
+.ad-description {
+  font-size: 0.9rem;
+  color: #222;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.ad-button {
+  padding: 0.4rem 1.1rem;
+  font-size: 0.85rem;
+  background-color: #ff6f00;
+  color: white;
+  border-radius: 20px;
+  font-weight: bold;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.ad-button:hover {
+  background-color: #e65100;
+}
+
+.vertical-mayor-ad {
+  position: relative;
+  max-width: 260px;
+  height: 92vh;
+  overflow: hidden;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.mayor-bg-image {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+
+.mayor-ad-overlay {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.6));
+  color: white;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+}
+
+
+.mayor-logo {
+  width: 90px;
+  margin: 0 auto;
+}
+
+.mayor-heading {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+.highlight {
+  filter: drop-shadow(0px 2px 6px rgb(0, 0, 0), 0.4);
+  color: #FFD43B; /* Golden color for "OPEN" */
+}
+.mayor-subtext {
+  font-size: 1.1rem;
+  margin-bottom: auto;
+}
+
+.mayor-button {
+  margin-top: auto;
+  display: inline-block;
+  padding: 0.8rem 1.2rem;
+  background-color: #006D77;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.mayor-button:hover {
+  background-color: #00565e;
+}
+
+
+/* Banner Content */
+.banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1200px; /* Optional: Limit the width */
+  padding: 0 20px;
+}
+
+/* Ticker Text */
+.ticker-message {
+  font-size: 16px;
+  font-weight: bold;
+  white-space: nowrap;
+  animation: ticker 10s linear infinite;
+}
+
+/* Close Button */
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Ticker Animation */
+@keyframes ticker {
+  0% {
+    transform: translateX(100%); /* Start from right */
   }
-  
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f7f7f7;
-    color: #333;
+  100% {
+    transform: translateX(-100%); /* End on the left */
   }
-  
-  /* Navbar styles */
-  .navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #d32f2f;
-    padding: 1rem 2rem;
-  }
-  
-  .navbar-logo a {
-    color: white;
-    font-size: 1.8rem;
-    font-weight: bold;
-    text-decoration: none;
-  }
-  
-  .navbar-links {
-    list-style: none;
-    display: flex;
-    gap: 1.5rem;
-  }
-  
-  .navbar-links a {
-    color: white;
-    text-decoration: none;
-    font-size: 1rem;
-  }
-  
-  .navbar-links a:hover {
-    text-decoration: underline;
-  }
-  
-  /* Footer styles */
-  .footer {
-    text-align: center;
-    padding: 1rem;
-    background-color: #d32f2f;
-    color: white;
-    margin-top: 2rem;
-  }
-  
-  /* Hero Section */
-  .hero {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: linear-gradient(to right, #ffe5e5, #ffffff);
-  }
-  
-  .hero h1 {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-  }
-  
-  .hero p {
-    font-size: 1.2rem;
-    color: #555;
-  }
-  
-  /* Tool Cards */
-  .tool-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 2rem;
-    padding: 2rem;
-  }
-  
-  .tool-card {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-    text-decoration: none;
-    color: #d32f2f;
-    font-weight: bold;
-    font-size: 1.2rem;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-  }
-  
-  .tool-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.ticker-message {
+  animation: ticker 15s linear infinite; /* Duration can be adjusted */
+}
+
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: #ff8c00; /* Change color on hover */
+}
+
+
+
+/* Navbar Styles */
+.navbar {
+  display: flex;
+  justify-content:space-between;
+  align-items: center;
+  padding: 0rem 2rem;/* Reduced padding for the navbar */
+  background-color:#D1EFF5;
+  color:#034059;
+  margin-top: 0; /* Removed margin to reduce space */
+  z-index: 999; /* Keeps the navbar in front of other sections */
+
+}
+
+
+
+/* Navigation bar logo styling */
+.navbar-logo {
+  padding-top: 0;
+  margin-top: 0;
+    max-width: 200px; /* Adjust size as needed for better visibility */
+    height: auto; /* Maintain aspect ratio */
   }
 
+.navbar-brand h1 {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #034059;
+}
+
+.navbar-links {
+  display: flex;
+}
+
+.nav-link {
+  color: #034059;
+  text-decoration: none;
+  margin-left: 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.nav-link:hover {
+  color: #ff6f61;
+}
+
+
+/* Hero Section */
+.hero {
+  display: flex;
+  align-items: center; /* Vertically align the content */
+  justify-content: space-between; /* Space between the text and the image */
+  padding: 0rem 2rem; /* Adjusted padding for a better balance */
+  background-color: #D1EFF5; /* The background color you requested */
+  background-size: cover;
+  background-repeat: no-repeat;
+  margin-bottom: 0;
+  margin-top: 0; /* Remove extra margin above the hero section */
+  gap: 4rem; /* Adjust gap for better spacing */
+}
+
+.hero-content {
+  flex: 1; /* Let the content take up available space */
+  max-width: 50%; /* Limit the width to half the container */
+  color: #034059;
+}
+
+.hero-heading {
+  font-size: 3.5rem; /* Increased the font size */
+  font-weight: bold;
+  margin-left: 2rem;
+  color:#003144;
+  margin-bottom: 1rem;
+  text-align: left; /* Align text to the left */
+}
+
+.hero-description {
+  font-size: 1.6rem; /* Adjusted font size */
+  margin-top: 0.5rem;
+  margin-left: 2rem;
+  padding-right: 1rem;
+  font-weight: 400;
+  text-align: left;
+}
+
+.cta-button {
+  display: inline-block;
+  margin-top: 1.5rem;
+  padding: 1rem 2rem;
+  background-color: #EA5034;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: background-color 0.3s ease;
+  margin-left: 2rem; /* This will move the button slightly to the right */
+}
+
+.cta-button:hover {
+  background-color:  #ff6f61;
+}
+
+/* Image Adjustments */
+.hero-image {
+  flex: 1; /* Allow the image to take the remaining space */
+  display: flex;
+  justify-content: flex-end; /* Align image to the right */
+}
+
+.hero-image img {
+  max-width: 125%; /* Adjusted to fit the layout properly */
+  height: auto;
+  object-fit: contain;
+  max-height: 100%;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .hero {
+    flex-direction: column; /* Stack text and image vertically on smaller screens */
+    gap: 2rem;
+  }
+
+  .hero-heading {
+    font-size: 2.5rem; /* Adjust font size on mobile */
+  }
+
+  .hero-description {
+    font-size: 1.2rem; /* Adjust description font size on mobile */
+  }
+
+  .cta-button {
+    font-size: 1.1rem; /* Adjust button font size for mobile */
+  }
+
+  .hero-image img {
+    max-width: 100%; /* Allow image to be full width on mobile */
+  }
+}
+
+
+.right-banner {
+  flex: 0 0 300px;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.vertical-ad-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.vertical-ad {
+  position: relative;
+  max-width: 260px;
+  height: 92vh;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.right-ad-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.right-ad-overlay {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.7));
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.right-ad-content {
+  max-width: 240px;
+}
+
+.right-ad-heading {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #111;
+  margin-bottom: 0.5rem;
+}
+
+.right-ad-description {
+  font-size: 0.95rem;
+  color: #222;
+  margin-bottom: 1rem;
+}
+
+.banner-button {
+  padding: 10px 22px;
+  font-size: 1rem;
+  background: linear-gradient(to right, #ff8c00, #ff5722);
+  color: #fff;
+  border: none;
+  border-radius: 30px;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  transition: transform 0.3s ease;
+}
+
+.banner-button:hover {
+  transform: scale(1.05);
+}
+
+
+/* Tool Grid Section */
+/* Keep tool grid aligned between two banners */
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  justify-content: center;
+  align-items: start;
+  flex: 1;
+}
+
+
+/* For screens smaller than 1200px, make 3 columns */
+@media (max-width: 1200px) {
+  .tool-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* For screens smaller than 900px, make 2 columns */
+@media (max-width: 900px) {
+  .tool-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* For smaller screens like phones, make 1 column */
+@media (max-width: 600px) {
+  .tool-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tool Card */
+.tool-card {
+  background-color:#E9E9E9;
+  padding: 12px; /* Reduced padding from 20px */
+  height: 200px;
+  width: 230px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 5px; 
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  margin-bottom: 0;
+  transition: transform 0.3s ease-in-out;
+  text-decoration: none;
+}
+
+/* Hover Effect */
+.tool-card:hover {
+  background-color: #D1EFF5; 
+  transform: scale(1.05); /* Hover effect for better interactivity */
+}
+
+/* Active Effect */
+.tool-card:active {
+  background-color:  #D1EFF5; 
+  transform: scale(1); /* Reset scale when clicked */
+}
+
+/* Tool Icon */
+.tool-icon {
+  width:110px;
+  height: 110px;
+  /* Reduced bottom margin */
+ /* Optional: Add small top margin if needed */
+}
+
+/* Tool Name */
+.tool-name {
+  font-size: 10px;
+  font-weight:bolder;
+  color: black;
+  margin-bottom: 4px; /* Slightly reduced */
+  text-decoration: none;
+}
+
+/* Tool Description */
+.tool-description {
+  font-size: 0.95rem;
+  color:black;
+  line-height: 1.3;
+  margin-top: 6px; /* Reduced space */
+  text-decoration: none;
+}
+
+/* Tool Grid with Banners Section */
+.tool-grid-with-banners {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem 1rem;
+  width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+
+/* Left and Right Banner Styles */
+.left-banner,
+.right-banner {
+  flex: 0 0 280px;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.banner-image {
+  width: 100%;
+  height: auto;
+  margin-bottom: 10px; /* Adjust spacing between images */
+}
+
+.image-container {
+  width: 100%;
+  margin-top: 20px;
+  margin-bottom: 50px; /* Adds space between the images */
+}
+
+
+/* Specific Styles for Left and Right Banners */
+.left-banner-image,
+.right-banner-image {
+  height: 300px; /* Increased height for banner images */
+}
+
+/* Tool Card Spacing and Layout Adjustments */
+/* Tool Card Spacing and Layout Adjustments */
+.tool-card span {
+  font-size: 14px;
+}
+
+/* Additional Space for Buttons */
+.banner-button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 0px; /* Space above the buttons */
+}
+
+/* Button Styles */
+.banner-button {
+  padding: 10px 20px;
+  background-color: #EA5034;
+  color: white;
+  font-weight: bold;
+  border-radius: 5px;
+  text-decoration: none;
+  margin-top: 10px; /* Added space between the images and the buttons */
+}
+
+.tool-layout {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: nowrap; /* Prevent wrapping */
+  gap: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  padding: 1rem;
+}
+
+
+/* Responsive Layout */
+@media (max-width: 1024px) {
+  .tool-grid {
+    grid-template-columns: repeat(4, 1fr); /* 4 columns for medium-sized screens */
+  }
+}
+
+@media (max-width: 768px) {
+  .tool-grid {
+    grid-template-columns: repeat(3, 1fr); /* 3 columns for smaller screens */
+  }
+}
+
+@media (max-width: 480px) {
+  .tool-grid {
+    grid-template-columns: 1fr; /* Single column for mobile */
+  }
+
+  .tool-card {
+    font-size: 1rem; /* Adjust font size on mobile */
+  }
+}
+
+/* Add a white banner below the hero */
+.hero-banner {
+  background-color: #EA5034;
+  padding: 0.5rem 0rem;
+  margin-bottom: 0rem;
+  display: flex;
+  gap: 20rem;
+  justify-content: center;
+
+}
+
+.hero-banner .cta-text {
+  font-size: 0.5rem;
+  color: white;
+
+}
+
+/* Optional: Adjust text styles for the white banner */
+.hero-banner .cta-text {
+  font-weight: 549;
+  font-size: 1.2rem;
+  color: white;
+  margin: 0;
+  padding: 0;
+}
+
+.app-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color:#003144; /* Light background color */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow for the banner */
+}
+
+.banner-left {
+  flex: 1;
+}
+
+.banner-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+
+.banner-right {
+  flex: 1;
+  padding-left: 2rem;
+}
+
+.banner-right h2 {
+  font-size: 2rem;
+  font-weight: bold;
+  color: white; /* Dark blue color */
+  margin-bottom: 1rem;
+}
+
+.banner-right p {
+  font-size: 1.2rem;
+  color: white;
+  margin-bottom: 1.5rem;
+}
+
+.download-button {
+  background-color: #EA5034;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.download-button:hover {
+  background-color:  #ff6f61;
+}
+
+
+/* About-Website Banner */
+.about-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  margin-bottom: 0;
+
+  background-color:  #D1EFF5;/* Light background for readability */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Image styling */
+.about-banner-image {
+  max-width: 40%;
+  height: auto;
   
+}
+
+.about-banner-image img {
+  width: 60%;  /* Adjust the width of the image */
+  height: auto; /* Maintain aspect ratio */
+  margin-left: 7rem; /* Reduce space between image and text */
+}
+
+/* Text content */
+.about-banner-content {
+  flex: 1;
+  padding-right: 1rem;
+  color: #333333;
+}
+
+.about-banner-heading {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 700;
+  font-size: 2.5rem;
+  color: #034059;
+  margin-bottom: 1.0rem;
+}
+
+.about-banner-description {
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 400;
+  font-size: 1.2rem;
+  color: #333333;
+  line-height: 1.6;
+  margin-bottom: 1.0rem;
+}
+
+.download-button {
+  background-color:#EA5034;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 600;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.download-button:hover {
+  background-color: #ff6f61;
+}
+
+
+/* Footer Section */
+/* Footer Section */
+.footer {
+  display: flex;
+  background-color: #1a1a1a;
+  padding: 3rem 0 1rem; /* Reduced bottom padding */
+  color: #fff;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.footer-logo-img {
+  max-width: 399px;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: space-between;
+  flex: 1;
+  flex-wrap: wrap; /* Allow wrapping of lists if needed */
+}
+
+.footer-lists {
+  flex-direction: row;
+  display: flex;
+  justify-content: space-between;
+  flex: 1;
+  flex-wrap: wrap; /* Ensure lists wrap if screen size is smaller */
+}
+
+.footer-list {
+  flex-direction: row;
+  margin-top: 2rem;
+  list-style-type: none;
+  padding: 0;
+  margin-right: 2rem; /* Space between lists */
+  flex: 1;
+  margin-bottom: 1.5rem; /* Add some space between rows of lists */
+}
+
+.footer-list ul {
+  padding: 0;
+}
+
+.footer-list li {
+  margin-bottom: 0.5rem;
+}
+
+.footer-list li a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.footer-list li a:hover {
+  color: #ff6f61;
+}
+
+/* Add margin to the Tools heading */
+.footer-heading {
+  font-size: 1.6rem;
+  margin-left: 4rem;
+  margin-bottom: 1rem;
+  color: #ff6f61;
+  padding-left: 20px; /* Moves the heading to the right */
+  padding-bottom: 1rem; /* Add padding to separate the heading from the list */
+}
+
+/* Ensure footer lists align properly */
+.footer-links h3 {
+  margin-left: 20px; /* Add left margin to each list */
+}
+
+/*ad-cards-banner*/
+.hospital-banner-section {
+  background: linear-gradient(to right, #C8F0F6, #AFCFDA);
+  padding: 3rem 1rem;
+}
+
+.hospital-cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.hospital-card {
+  background-color: white;
+  border-radius: 1rem;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  width: 240px;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.hospital-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+.hospital-image-wrapper {
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  border-bottom: 1px solid #ddd;
+}
+
+.hospital-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.hospital-card:hover .hospital-card-image {
+  transform: scale(1.05);
+}
+
+.hospital-card-body {
+  padding: 1rem;
+  background-color: #fff;
+}
+
+.hospital-card-body h3 {
+  font-size: 1.2rem;
+  color: #285968;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.hospital-card-body p {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 1rem;
+}
+
+.hospital-button {
+  display: inline-block;
+  padding: 0.7rem 1.4rem;
+  background: linear-gradient(135deg, #FF830E, #FF6600);
+  border-radius: 30px;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  border: 1px solid white;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.hospital-button:hover {
+  transform: scale(1.05);
+  background: linear-gradient(135deg, #FFA040, #FF830E);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hospital-cards-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .hospital-card {
+    width: 240px;
+  }
+}
+
+
+.hospital-ad-banner {
+  
+  background-color: #f0f8ff; /* Soft background color */
+  padding: 20px 20px; /* Padding around the banner */
+}
+
+.hospital-ad-container {
+  display: flex;
+  justify-content: space-between; /* This will push the text and image apart */
+  align-items: center; /* Vertically center the content */
+  gap: 2px; /* Space between the image and the text */
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.hospital-ad-image1-container {
+  position: relative;
+  padding-left: 1rem;
+}
+
+.hospital-ad-image1 {
+  width: 25rem;/* Image size */
+  height: auto;
+  border-radius: 8px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+
+
+/* Hover effect for the first image */
+.hospital-ad-image1:hover {
+  transform: scale(1.05); /* Zoom effect */
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.2); /* Shadow effect */
+}
+
+/* Adjustments for the second image */
+.hospital-ad-image2-container {
+  position: absolute;
+  bottom: -20px;
+  left: -20px; /* Position the second image slightly below the first image */
+  z-index: 10; /* Bring the second image to the front */
+}
+
+
+.hospital-ad-image2 {
+  margin-left: 3rem;
+  width: 240px; /* 1/3 of Image 1's size */
+  height: auto;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hospital-ad-image3-container {
+  position: relative;
+  padding-left: 1rem;
+  z-index: 20px;
+  left: -20px;
+}
+
+.hospital-ad-image3 {
+  width: 200px; /* Image size */
+  height: auto;
+  border-radius: 8px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+
+/* Text on the right */
+.hospital-ad-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  max-width: 50%; /* Limit text area width */
+  padding-left: 20px; /* Optional padding to give space between text and image */
+}
+
+.hospital-ad-content h2 {
+  font-size: 40px;
+  color: #003144;
+  margin-bottom: 10px;
+}
+
+.hospital-ad-content p {
+  font-size: 20px;
+  color:#003144;
+  margin-bottom: 20px;
+}
+
+.hospital-ad-content button {
+  padding: 12px 24px;
+  font-weight: 550;
+  font-size: 18px;
+  background-color: #ff5733;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hospital-ad-container {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .hospital-ad-image1, .hospital-ad-image2 {
+    width: 80%; /* Image width for small screens */
+  }
+}
+
+/* Chetak Banner Container Styling */
+.chetak-banner-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px; /* Empty space around the image */
+  background:white;
+  width: 100%;
+  height: 350px; /* Adjust the height as needed */
+  overflow: hidden;
+  }
+
+.chetak-banner-left {
+  flex: 1;
+  padding: 20px;
+  padding-right: 10rem;
+  text-align: left;
+  color: rgba(0, 0, 0, 0);
+}
+
+.chetak-banner-left h1 {
+  font-size: 24px;
+  font-weight: bold;
+  color: #000000;
+  margin-bottom: 15px;
+}
+
+.chetak-banner-left p {
+  font-size: 16px;
+  color: #000000;
+  margin-bottom: 20px;
+}
+
+.chetak-banner-left .chetak-banner-link {
+  font-size: 18px;
+  color: #000000;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.chetak-banner-right {
+
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.chetak-banner-image {
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 600px; /* Ensure the image doesn't exceed the max width */
+  height: auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow for a realistic look */
+  object-fit: contain; /* Ensures image keeps its aspect ratio */
+}
+
+
+/* General Container */
+.merge-container {
+  max-width: 600px;
+  margin: 4rem auto;
+  padding: 30px;
+  background: #ffffff;
+  border-radius: 15px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.merge-heading {
+  font-size: 2.2rem;
+  color: #285968;
+  margin-bottom: 1.5rem;
+}
+
+.upload-zone {
+  margin-bottom: 1.5rem;
+}
+
+.drop-zone {
+  display: block;
+  padding: 2rem;
+  border: 2px dashed #79B7D8;
+  border-radius: 10px;
+  background: #C8F0F6;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.drop-zone:hover {
+  background: #AFCFDA;
+}
+
+.drop-message {
+  font-size: 1.1rem;
+  color: #285968;
+  font-weight: 500;
+}
+
+.file-upload-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.file-input {
+  padding: 12px;
+  width: 300px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.file-input::file-selector-button {
+  padding: 8px 12px;
+  border: none;
+  background-color: #034059;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.merge-btn {
+  background-color: orange;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  color: white;
+}
+
+.message {
+  font-size: 0.95rem;
+  color: #034059;
+  text-align: center;
+}
+
+
+.file-input:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 5px rgba(0, 122, 204, 0.2);
+}
+
+
+.file-list {
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.file-item {
+  padding: 8px 10px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.reset-button {
+  background-color: #FF830E;
+  color: #fff;
+  padding: 8px 14px;
+  border: 1px solid #fff;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: 0.3s ease;
+}
+
+.reset-button:hover {
+  background-color: #e56f00;
+}
+
+.merge-action-button {
+  background: linear-gradient(135deg, #FF830E, #FF5733);
+  color: #fff;
+  padding: 14px 30px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 1px solid #fff;
+  border-radius: 30px;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: all 0.3s ease;
+}
+
+.merge-action-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.merge-action-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Loader spinner */
+.loader {
+  margin: 20px auto;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #00A636;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.merge-message {
+  margin-top: 1.5rem;
+  font-size: 1rem;
+  color: #285968;
+}
+
+.chetak-banner {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  overflow: hidden;
+  font-family: 'Arial', sans-serif;
+}
+
+.bg-image {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+/* Main Layout */
+.banner-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  padding: 0 40px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Brand logo */
+.brand-logo {
+  position: absolute;
+  top: 20px;
+  left: 120px;
+  height: 100px;
+}
+
+/* Text Block */
+.banner-text {
+  color: white;
+  max-width: 50%;
+  margin-top: 1rem;
+  margin-left: 100px;
+}
+
+.main-heading {
+  font-size: 1.9rem;
+  font-weight: bold;
+  line-height: 1.4;
+}
+
+.subtext {
+  margin-top: 10px;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.learn-btn {
+  margin-top: 15px;
+  background: #ff8800;
+  border: none;
+  padding: 10px 24px;
+  color: white;
+  font-weight: bold;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.learn-btn:hover {
+  background: #e57100;
+}
+
+/* Scooter */
+.scooter-img {
+  height:320px;
+  margin-right: 0px;
+  z-index: 3;
+}
+
+.about-company-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(to right, #C8F0F6, #AFCFDA, #79B7D8);
+  padding: 2.5rem 6rem;
+
+  overflow: hidden;
+  transition: transform 0.3s ease-in-out;
+}
+
+
+
+.about-banner-content {
+  flex: 1;
+  max-width: 50%;
+  color: #285968;
+}
+
+.about-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.about-description {
+  font-size: 1.2rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.about-cta {
+  display: inline-block;
+  padding: 0.8rem 1.5rem;
+  background: linear-gradient(135deg, #FF830E, #FF6A00);
+  color: white;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border-radius: 12px;
+  border: 0.1rem solid white;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.about-cta:hover {
+  transform: scale(1.05);
+  background: linear-gradient(135deg, #FF6A00, #FF830E);
+}
+
+.about-banner-image {
+  flex: 1;
+  text-align: right;
+}
+
+.about-mascot {
+  max-width: 280px;
+  width: 100%;
+  animation: floatUpDown 3s ease-in-out infinite;
+}
+
+/* Float animation */
+@keyframes floatUpDown {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .about-company-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .about-banner-content,
+  .about-banner-image {
+    max-width: 100%;
+  }
+
+  .about-mascot {
+    max-width: 200px;
+    margin-top: 1.5rem;
+  }
+}
+
+
+.merge-pdf-container {
+  max-width: 800px;
+  margin: 50px auto;
+  padding: 30px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  font-family: 'Arial', sans-serif;
+}
+
+/* Heading */
+.page-heading {
+  font-size: 2rem;
+  color: #034059;
+  margin-bottom: 25px;
+  font-weight: bold;
+}
+
+/* Upload Box */
+.custom-upload-box {
+  border: 2px dashed #00A6B5;
+  background-color: #C8F0F6;
+  padding: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  color: #034059;
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.custom-upload-box:hover {
+  background-color: #AFCFDA;
+  transform: scale(1.02);
+}
+
+.file-input {
+  display: none;
+}
+
+/* Message below the input */
+.message {
+  font-size: 0.95rem;
+  color: #034059;
+  margin-top: 12px;
+  font-weight: 500;
+}
+
+/* Merge & Compress PDF Button */
+.merge-btn, .compress-btn {
+  background: linear-gradient(to right, #FF830E, #FF6F00);
+  border: 2px solid #fff;
+  border-radius: 50px;
+  color: white;
+  font-size: 1.2rem;
+  padding: 12px 30px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+  margin-top: 20px;
+}
+
+.merge-btn:hover, .compress-btn:hover {
+  transform: scale(1.05);
+  background: linear-gradient(to right, #FF6F00, #FF830E);
+}
+
+.merge-btn:disabled, .compress-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  border: 2px solid #999;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  margin-top: 20px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #00A6B5;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.compression-options {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.compression-choice {
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  border: 2px solid #ccc;
+  background-color: #F0F4F8;
+  cursor: pointer;
+  transition: 0.3s ease all;
+  text-align: center;
+  max-width: 220px;
+}
+
+.compression-choice h4 {
+  margin: 0;
+  color: #285968;
+}
+
+.compression-choice p {
+  margin: 0.3rem 0 0;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.compression-choice:hover {
+  background-color: #D1EFF5;
+  border-color: #00A6B5;
+  transform: scale(1.02);
+}
+
+.compression-choice.active {
+  border-color: #FF830E;
+  background: linear-gradient(to right, #FFE1C3, #FFD1AA);
+}
+
+.split-options {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+
+.split-btn {
+  padding: 10px 18px;
+  background-color: #f0f4f8;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s ease all;
+  font-weight: bold;
+  color: #285968;
+}
+
+.split-btn.active,
+.split-btn:hover {
+  background: linear-gradient(to right, #FF830E, #FFA726);
+  color: white;
+  border-color: #FF830E;
+}
+
+.range-input {
+  width: 60%;
+  padding: 10px;
+  font-size: 1rem;
+  margin: 1rem auto;
+  display: block;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.custom-upload-box {
+  display: block;
+  width: 80%;
+  margin: 0 auto 1rem;
+  padding: 1rem;
+  border: 2px dashed #00A6B5;
+  background-color: #f0f8ff;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: 0.3s ease;
+}
+
+.custom-upload-box:hover {
+  background-color: #e0f7fa;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.html-input-container {
+  margin: 20px 0;
+}
+
+.html-textarea {
+  width: 100%;
+  padding: 16px;
+  font-size: 1rem;
+  font-family: 'Courier New', monospace;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  resize: vertical;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  min-height: 200px;
+}
+
+/* Global container */
+/* === Watermark Styles === */
+.watermark-container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  font-family: Arial, sans-serif;
+}
+
+.page-heading {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #333;
+}
+
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.file-input, .text-input, .submit-button, .reset-button, select, input[type="number"], input[type="color"] {
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  width: 100%;
+}
+
+.reset-button {
+  background-color: #999;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  margin-top: -10px;
+  transition: background-color 0.3s ease;
+}
+
+.reset-button:hover {
+  background-color: #777;
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.message {
+  margin-top: 10px;
+  font-weight: bold;
+  color: #007bff;
+}
+
+.submit-button {
+  background-color: #ff6f00;
+  color: #fff;
+  border: none;
+  margin-top: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.submit-button:hover {
+  background-color: #e65c00;
+}
+
+.pdf-preview {
+  position: relative;
+  margin-top: 30px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  background: #f7f7f7;
+}
+
+.watermark-overlay {
+  border: 2px dashed #007bff;
+  background-color: rgba(255, 255, 255, 0.4);
+  color: #444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: move;
+  user-select: none;
+  font-weight: 500;
+  padding: 5px;
+  animation: pulseBorder 1s infinite alternate ease-in-out;
+}
+
+@keyframes pulseBorder {
+  from {
+    border-color: #007bff;
+  }
+  to {
+    border-color: #00bcd4;
+  }
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  gap: 10px;
+}
+
+.tabs button {
+  padding: 10px 20px;
+  font-size: 14px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tabs .active-tab {
+  background-color: #007bff;
+  color: #fff;
+  border-color: #007bff;
+}
+
+
+.pdf-to-excel-container {
+  padding: 20px;
+  max-width: 600px;
+  margin: auto;
+  text-align: center;
+}
+
+.pdf-to-excel-container h2 {
+  margin-bottom: 20px;
+}
+
+.pdf-to-excel-container input {
+  margin-bottom: 10px;
+}
+
+.pdf-to-excel-container button {
+  padding: 10px 20px;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+
+.watermark-container {
+  max-width: 500px;
+  margin: auto;
+  padding: 2rem;
+  background: #f8f8f8;
+  border-radius: 10px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+input, select, button {
+  padding: 0.6rem;
+  font-size: 1rem;
+}
+
+.download-section {
+  margin-top: 1rem;
+  text-align: center;
+}

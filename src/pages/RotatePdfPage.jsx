@@ -4,86 +4,105 @@ import '../styles/ComponentStyles.css';
 
 function RotatePdfPage() {
   const [selectedFile, setSelectedFile] = useState(null);
-  const [rotationAngle, setRotationAngle] = useState(90); // Default angle is 90
+  const [rotationDirection, setRotationDirection] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Handle file selection
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      setMessage(`📂 Selected file: ${file.name}`);
-    }
+    setSelectedFile(file);
+    setMessage(`📄 Selected: ${file?.name}`);
   };
 
-  // Handle angle selection
-  const handleAngleChange = (e) => {
-    setRotationAngle(parseInt(e.target.value, 10));
-  };
-
-  // Handle conversion on button click
-  const handleConvertClick = async () => {
-    if (!selectedFile) {
-      setMessage('❌ Please select a PDF file to rotate.');
+  const handleRotate = async () => {
+    if (!selectedFile || !rotationDirection) {
+      setMessage('❌ Please upload a PDF and select rotation direction.');
       return;
     }
 
-    setMessage('⚙️ Rotating PDF...');
+    setLoading(true);
+    setMessage('🔁 Rotating PDF...');
 
     const formData = new FormData();
     formData.append('file', selectedFile);
-    formData.append('angle', rotationAngle); // Add rotation angle to the request
+    formData.append('direction', rotationDirection);
 
     try {
-      // Sending the PDF file and rotation angle to the backend for processing
       const response = await axios.post('http://localhost:5000/rotate-pdf', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
         responseType: 'blob',
       });
 
-      // Create a link to download the rotated PDF
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
       link.href = url;
-      link.download = 'rotated_output.pdf';
+      link.setAttribute('download', 'rotated.pdf');
+      document.body.appendChild(link);
       link.click();
+      link.remove();
 
-      // Provide feedback to the user
-      setMessage(`✅ Successfully rotated the PDF!`);
+      setMessage('✅ Successfully rotated and downloaded the PDF.');
     } catch (error) {
       console.error('Error rotating PDF:', error);
-      setMessage('❌ Something went wrong while rotating the PDF.');
+      setMessage('❌ Something went wrong.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="tool-page">
-      <h2>Rotate PDF</h2>
-      <p>Upload a PDF file and select the angle to rotate it.</p>
+    <div className="merge-pdf-container">
+      <h2 className="page-heading">Rotate PDF</h2>
 
-      <div className="upload-section">
-        <input type="file" accept="application/pdf" onChange={handleFileChange} />
-        
-        <div className="rotation-selection">
-          <label>Rotation Angle:</label>
-          <select value={rotationAngle} onChange={handleAngleChange}>
-            <option value={90}>90°</option>
-            <option value={180}>180°</option>
-            <option value={270}>270°</option>
-          </select>
-        </div>
+      <label htmlFor="pdf-upload" className="custom-upload-box">
+        📁 Click or Drag to Upload PDF
+      </label>
+      <input
+        id="pdf-upload"
+        type="file"
+        accept="application/pdf"
+        onChange={handleFileChange}
+        className="file-input hidden-input"
+      />
 
-        <button className="upload-button" onClick={handleConvertClick}>Rotate PDF</button>
-      </div>
+      {selectedFile && (
+        <iframe
+          src={URL.createObjectURL(selectedFile)}
+          title="PDF Preview"
+          width="100%"
+          height="400px"
+          className="pdf-preview"
+        />
+      )}
 
-      {message && (
-        <div className="upload-feedback">
-          <p>{message}</p>
+      {selectedFile && (
+        <div className="rotate-buttons">
+          <button
+            className={`split-btn ${rotationDirection === 'left' ? 'active' : ''}`}
+            onClick={() => setRotationDirection('left')}
+          >
+            ⬅️ Rotate Left
+          </button>
+          <button
+            className={`split-btn ${rotationDirection === 'right' ? 'active' : ''}`}
+            onClick={() => setRotationDirection('right')}
+          >
+            ➡️ Rotate Right
+          </button>
         </div>
       )}
+
+      <p className="message">{message}</p>
+
+      <button
+        className="merge-btn"
+        onClick={handleRotate}
+        disabled={loading}
+      >
+        {loading ? 'Rotating...' : 'Rotate PDF'}
+      </button>
+
+      {loading && <div className="loading-spinner"></div>}
     </div>
   );
 }

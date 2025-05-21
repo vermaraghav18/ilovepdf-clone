@@ -1,139 +1,133 @@
 const express = require('express');
-const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
-const { jsPDF } = require('jspdf');
-const imageUpload = multer({ dest: 'uploads/' });
-const { processPdf } = require('./pdfOCR'); // Make sure the path is correct
-const { unlockPdf } = require('./pdfUnlock'); // Import the unlockPdf function from pdfUnlock.js
-const { protectPdf } = require('./pdfOperations'); // Importing protectPdf from pdfOperations
-const { repairPdf } = require('./pdfUtils');  // Import the repairPdf function
-const { PDFDocument , rgb } = require('pdf-lib');
-const puppeteer = require('puppeteer');
-const pdf = require('pdf-poppler');
-const pdfParse = require('pdf-parse');  // To parse PDF files
-const { Document, Packer, Paragraph, TextRun } = require('docx'); // For creating Word docx files
-const ExcelJS = require('exceljs');
-const mammoth = require('mammoth');
-const { fromPath } = require('pdf2pic');
-const Tesseract = require('tesseract.js');
-const { exec } = require('child_process');
-const pptx2pdf = require('pptx2pdf');  // Import PowerPoint to PDF converter
-const imageToPdf = require('image-to-pdf');
 const cors = require('cors');
+const multer = require('multer');
+const { PDFDocument, rgb, StandardFonts, degrees } = require('pdf-lib');
+const fs = require('fs');
+const { editPdf } = require('./editPdf');
+const { convert } = require('pdf-poppler'); 
+const path = require('path');
+const XLSX = require('xlsx');
+const { Document, Packer, Paragraph, TextRun } = require('docx');
+const { cropPdf } = require('./cropPdf');
+const { execSync } = require("child_process");
+const ExcelJS = require('exceljs');
+const PDFKitDocument = require('pdfkit'); // ✅ Give a unique alias
+const stringSimilarity = require("string-similarity");
+const Tesseract = require("tesseract.js");
+const { repairPdf } = require('./pdfUtils');
+const { redactPdf } = require('./redactPdf');
+const { convertPdfToPpt } = require('./pdfToPpt');
+const { pptx2pdf } = require('./utils/pptxToPdfHelper'); // ✅ Add this import
+const {
+  upload,
+  uploadPDF,
+  uploadDOCX,
+  uploadExcel,
+  uploadJPG,
+  uploadPPT,
+  imageUpload,
+  mixedUpload,
+  uploadWatermarkPDF,
+  uploadWatermarkImage, // ✅ Add this line
+} = require('./uploadMiddleware');
+
+const { organizePdf } = require('./organizePdf');
+
+const { jsPDF } = require('jspdf');
+const puppeteer = require('puppeteer');
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
+const { exec } = require('child_process');
 const archiver = require('archiver');
 
-const app = express();                
+
+const app = express();
 const port = 5000;
 
+// ✅ Storage engine
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname),
+});
 
-// Middleware to parse JSON request bodies
-app.use(express.json());  // This will parse JSON bodies
+// ✅ Upload handler
+const watermarkUpload = multer({ storage }).fields([
+
+  { name: 'pdf', maxCount: 1 },
+  { name: 'image', maxCount: 1 },
+]);
+
+const { fromPath } = require("pdf2pic");
+app.use(cors());
+app.use('/outputs', express.static(path.join(__dirname, 'outputs')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/output', express.static(path.join(__dirname, 'output')));
+app.use('/thumbnails', express.static(path.join(__dirname, 'public/thumbnails')));
+app.use(express.urlencoded({ extended: true }));
 
 
-// Ensure uploads directory exists
+// Ensure upload & protected folders exist
+if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
+if (!fs.existsSync('protected')) fs.mkdirSync('protected');
+if (!fs.existsSync('outputs')) fs.mkdirSync('outputs');
+if (!fs.existsSync('public/thumbnails')) fs.mkdirSync('public/thumbnails', { recursive: true });
+
+
+// ✅ Health Check
+app.get('/', (req, res) => {
+  res.send('Server is running!');
+});
+
+
+// Ensure 'uploads' directory exists
 if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads');
 }
 
-
 // Middleware
 app.use(cors());
 app.use(express.static('public'));
+app.use(express.json({ limit: "200mb" }));
+app.use(express.urlencoded({ limit: "200mb", extended: true }));
 
-
-
-// Multer configuration for PDF file upload
-const pdfStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); 
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
+function sanitizePdf(inputPath, outputPath) {
+  try {
+    execSync(`qpdf "${inputPath}" --linearize "${outputPath}"`);
+    console.log(`Sanitized: ${outputPath}`);
+    return outputPath;
+  } catch (error) {
+    console.error("QPDF sanitization failed:", error.message);
+    return inputPath; // fallback
   }
-});
+}
 
 
+function compareText(text1, text2) {
+  const differences = [];
+  const lines1 = text1.split('\n');
+  const lines2 = text2.split('\n');
+  const maxLength = Math.max(lines1.length, lines2.length);
 
-// Multer configuration for DOCX file upload
-const docxStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
+  for (let i = 0; i < maxLength; i++) {
+    const line1 = (lines1[i] || '').trim();
+    const line2 = (lines2[i] || '').trim();
+    const similarityScore = stringSimilarity.compareTwoStrings(line1, line2);
+
+    if (similarityScore < 1) {
+      differences.push({
+        line: i + 1,
+        pdf1: line1,
+        pdf2: line2,
+        similarity: (similarityScore * 100).toFixed(1) + '%'
+      });
+    }
   }
-});
 
-// Multer configuration for JPG file upload
-const jpgStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
-  }
-});
+  return differences;
+}
 
 
-// Multer configuration for Excel file upload
-const excelStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
-  }
-});
-
-// File filter for PDF files
-const pdfFileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/pdf') {
-    cb(null, true); // Accept the file
-  } else {
-    cb(new Error('Invalid file type. Only PDFs are allowed!'), false); // Reject the file
-  }
-};
-// File filter for JPG files
-const jpgFileFilter = (req, file, cb) => {
-  if (file.mimetype === 'image/jpeg') {
-    cb(null, true); // Accept the file
-  } else {
-    cb(new Error('Invalid file type. Only JPG files are allowed!'), false); // Reject the file
-  }
-};
-
-
-// Multer setup for file uploads (store files in memory)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
-  }
-});
-
-
-// File filter for DOCX files
-const docxFileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-    cb(null, true); // Accept the file
-  } else {
-    cb(new Error('Invalid file type. Only DOCX files are allowed!'), false); // Reject the file
-  }
-};
-
-// File filter for Excel files
-const excelFileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-    cb(null, true); // Accept the file
-  } else {
-    cb(new Error('Invalid file type. Only Excel files are allowed!'), false); // Reject the file
-  }
-};
-
-// Helper function for cleanup
+// ✅ Clean up function
 function cleanup(paths) {
   paths.forEach(p => {
     try { fs.existsSync(p) && fs.unlinkSync(p); }
@@ -141,79 +135,74 @@ function cleanup(paths) {
   });
 }
 
-// Helper function for cleanup (removes temporary files)
-function cleanup(paths) {
-  paths.forEach(p => {
-    try {
-      fs.existsSync(p) && fs.unlinkSync(p);
-    } catch (e) {
-      console.error('Cleanup error:', e);
-    }
-  });
+// Helper: Convert HEX to RGB
+function hexToRgb(hex) {
+  const match = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  if (!match) return rgb(0.5, 0.5, 0.5);
+  const r = parseInt(match[1], 16) / 255;
+  const g = parseInt(match[2], 16) / 255;
+  const b = parseInt(match[3], 16) / 255;
+  return rgb(r, g, b);
 }
-// Multer configurations for PDF and DOCX uploads
-const uploadPDF = multer({ storage: pdfStorage, fileFilter: pdfFileFilter });
-const uploadDOCX = multer({ storage: docxStorage, fileFilter: docxFileFilter });
-const uploadExcel = multer({ storage: excelStorage, fileFilter: excelFileFilter });
-const uploadJPG = multer({ storage: jpgStorage, fileFilter: jpgFileFilter });
-const upload = multer({ storage });
-const fileUpload = multer({ dest: 'uploads/' });
+// 🛠 Helper: Convert HEX to RGB
+function rgbFromHex(hex) {
+  const bigint = parseInt(hex.replace('#', ''), 16);
+  return rgb(
+    ((bigint >> 16) & 255) / 255,
+    ((bigint >> 8) & 255) / 255,
+    (bigint & 255) / 255
+  );
+}
+// Ensure upload directory exists
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
 
 
 
-// Endpoint to handle PDF and image upload for editing
-// Endpoint to handle PDF editing
-app.post('/edit-pdf', upload.fields([{ name: 'pdf', maxCount: 1 }, { name: 'image', maxCount: 1 }]), async (req, res) => {
-  const pdfPath = req.files['pdf'][0].path;  // Path to the uploaded PDF
-  const outputPdfPath = path.join('output', `edited_${req.files['pdf'][0].filename}.pdf`);  // Output path for the modified PDF
+// Ensure upload & protected folders exist
+['uploads', 'protected', 'outputs', 'public/thumbnails'].forEach(dir => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+});
 
-  console.log(`Uploaded PDF Path: ${pdfPath}`);
+app.post('/upload', upload.single('pdf'), (req, res) => {
+  if (!req.file) return res.status(400).send('No file uploaded.');
+  res.json({ 
+    filePath: `/uploads/${req.file.filename}`,
+    filename: req.file.filename });
+});
 
-  try {
-    // Load the uploaded PDF
-    const existingPdfBytes = fs.readFileSync(pdfPath);
-    const pdfDoc = await PDFDocument.load(existingPdfBytes);
-
-    // Get the first page
-    const page = pdfDoc.getPages()[0];
-
-    // Add text annotation on the first page
-    page.drawText('Edited PDF with Annotations!', {
-      x: 50,
-      y: 500,
-      size: 30,
-      color: rgb(0, 0, 0),  // Black text
-    });
-
-    // If an image is uploaded, embed it into the PDF
-    if (req.files['image']) {
-      const imagePath = req.files['image'][0].path;  // Get the image path from the upload
-      const imageBytes = fs.readFileSync(imagePath); // Read the image file as a buffer
-      const image = await pdfDoc.embedJpg(imageBytes); // Embed the image into the PDF
-
-      // Draw the image on the first page of the PDF
-      page.drawImage(image, { x: 50, y: 450, width: 200, height: 100 });
-    }
-
-    // Save the edited PDF
-    const editedPdfBytes = await pdfDoc.save();
-    fs.writeFileSync(outputPdfPath, editedPdfBytes);
-
-    // Send the edited PDF back to the user
-    res.download(outputPdfPath, 'edited_pdf.pdf', () => {
-      // Clean up the uploaded PDF and image files after use
-      fs.unlinkSync(pdfPath);
-      if (req.files['image']) {
-        fs.unlinkSync(req.files['image'][0].path);
-      }
-    });
-
-  } catch (error) {
-    console.error('Error editing PDF:', error);
-    res.status(500).send('Error editing PDF');
+app.get('/download/:filename', (req, res) => {
+  const filePath = path.join(__dirname, 'uploads', req.params.filename);
+  if (fs.existsSync(filePath)) {
+    res.download(filePath);
+  } else {
+    res.status(404).send('File not found');
   }
 });
 
+
+app.listen(port, () => console.log(`🚀 Server running at http://localhost:${port}`));
+
+
+// 🧠 Route: Edit PDF
+// Edit PDF route
+app.post('/edit-pdf', async (req, res) => {
+  try {
+    const { annotations, pdfPath } = req.body;
+    const editedPdfBuffer = await editPdf(pdfPath, annotations);
+    const outputPath = `./outputs/edited-${Date.now()}.pdf`;
+    fs.writeFileSync(outputPath, editedPdfBuffer);
+    res.download(outputPath);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error editing PDF.');
+  }
+});
+
+const PORT = 5000;
+app.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));
 
 //-------------- Function to SCAN PDF--------//
 
@@ -264,93 +253,92 @@ app.listen(5000, () => {
   console.log('Server is running on port 5000');
 });
 
-// Function to perform OCR on PDF
-app.post('/ocr-pdf', upload.single('pdf'), async (req, res) => {
-  const inputPdfPath = req.file.path;
-  const outputTextPath = path.join('output', `${req.file.filename}.txt`); // Save OCR text
-
-  try {
-    await processPdf(inputPdfPath, outputTextPath); // Try extracting text or OCR
-    res.download(outputTextPath); // Send the OCR text file to the user
-  } catch (error) {
-    console.error('Error processing PDF:', error);
-    res.status(500).send('Error processing PDF');
-  }
-});
-
-app.listen(5000, () => {
-  console.log('Server is running on port 5000');
-});
 
 //-------------- UNLOCK PDF------------// 
+// 🧩 UNLOCK PDF ROUTE
 app.post('/unlock-pdf', upload.single('pdf'), async (req, res) => {
-  const { password } = req.body; // Get password from the frontend
+  const { password } = req.body;
   const inputPdfPath = req.file.path;
-  const outputPdfPath = path.join('unlocked', req.file.filename); // Set output path for unlocked PDF
+  const outputPdfPath = path.join(__dirname, 'uploads', `unlocked-${req.file.filename}.pdf`);
 
-  try {
-    const unlockedPdf = await unlockPdf(inputPdfPath, outputPdfPath, password); // Call the unlockPdf function
-    res.download(unlockedPdf); // Send the unlocked PDF to the user
-  } catch (error) {
-    console.error('Error unlocking PDF:', error);
-    res.status(500).send('Error unlocking PDF');
-  }
+  const command = `qpdf --password=${password} --decrypt "${inputPdfPath}" "${outputPdfPath}"`;
+
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error('Unlock Error:', stderr);
+      return res.status(500).send('Error unlocking PDF. Password may be incorrect.');
+    }
+
+    res.download(outputPdfPath, 'unlocked.pdf', (err) => {
+      if (err) console.error('Download error:', err);
+      fs.unlinkSync(inputPdfPath);
+      fs.unlinkSync(outputPdfPath);
+    });
+  });
 });
 
-app.listen(5000, () => {
-  console.log('Server is running on port 5000');
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
 });
+
 
 //-------------- PROTECT PDF------------// 
+// 🔐 PROTECT PDF
 app.post('/protect-pdf', upload.single('pdf'), async (req, res) => {
-  const { password } = req.body; // Extract password from the frontend
+  const { password } = req.body;
   const inputPdfPath = req.file.path;
-  const outputPdfPath = path.join('protected', req.file.filename); // Set destination for protected PDF
+  const outputPdfPath = path.join(__dirname, 'protected', `protected-${req.file.filename}`);
 
-  try {
-    const protectedPdf = await protectPdf(inputPdfPath, outputPdfPath, password); // Call protectPdf function
-    res.download(protectedPdf); // Send the protected PDF to the user
-  } catch (error) {
-    console.error('Error protecting PDF:', error);
-    res.status(500).send('Error protecting PDF');
-  }
+  const command = `qpdf --encrypt ${password} ${password} 256 -- "${inputPdfPath}" "${outputPdfPath}"`;
+
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error('Encryption Error:', stderr);
+      return res.status(500).send('Error protecting PDF.');
+    }
+
+    res.download(outputPdfPath, 'protected.pdf', (err) => {
+      if (err) console.error('Download error:', err);
+      fs.unlinkSync(inputPdfPath);
+      fs.unlinkSync(outputPdfPath);
+    });
+  });
 });
 
-app.listen(5000, () => {
-  console.log('Server is running on port 5000');
+app.listen(port, () => {
+  console.log(`✅ Server running at http://localhost:${port}`);
 });
+
 
   //-------------- REPAIR PDF------------// 
   // Function to repair PDF
-  app.post('/repair-pdf', fileUpload.single('file'), async (req, res) => {
-    try {
-      const { file } = req;
-      if (!file) {
-        return res.status(400).send('No file uploaded.');
-      }
-  
-      const inputPdfPath = path.join(__dirname, 'uploads', file.filename);
-      const outputPdfPath = path.join(__dirname, 'uploads', 'repaired_output.pdf');
-  
-      console.log('Input PDF Path:', inputPdfPath);
-      console.log('Output PDF Path:', outputPdfPath);
-  
-      // Call repairPdf function to repair the uploaded PDF
-      await repairPdf(inputPdfPath, outputPdfPath);
-  
-      // Send the repaired PDF back to the user
-      res.download(outputPdfPath, 'repaired_output.pdf', (err) => {
-        // Clean up uploaded and output files
-        fs.unlinkSync(file.path);
-        fs.unlinkSync(outputPdfPath);
-        if (err) console.error('Error sending file:', err);
-      });
-    } catch (err) {
-      console.error('Error during PDF repair:', err);
-      res.status(500).send('Error repairing the PDF.');
+  // Function to repair PDF
+app.post('/repair-pdf', upload.single('file'), async (req, res) => {
+  try {
+    const { file } = req;
+    if (!file) {
+      return res.status(400).send('No file uploaded.');
     }
-  });
 
+    const inputPdfPath = path.join(__dirname, 'uploads', file.filename);
+    const outputPdfPath = path.join(__dirname, 'uploads', 'repaired_output.pdf');
+
+    console.log('Input PDF Path:', inputPdfPath);
+    console.log('Output PDF Path:', outputPdfPath);
+
+    // Your repair function using qpdf or fallback logic
+    await repairPdf(inputPdfPath, outputPdfPath);
+
+    res.download(outputPdfPath, 'repaired_output.pdf', (err) => {
+      fs.unlinkSync(inputPdfPath);
+      fs.unlinkSync(outputPdfPath);
+      if (err) console.error('Error sending file:', err);
+    });
+  } catch (err) {
+    console.error('Error during PDF repair:', err);
+    res.status(500).send('Error repairing the PDF.');
+  }
+});
 
 
 // Convert PDF to Word
@@ -358,141 +346,88 @@ app.post('/convert-pdf-to-word', upload.single('file'), async (req, res) => {
   try {
     const { file } = req;
     if (!file) {
-      return res.status(400).send('Please upload a PDF file.');
+      return res.status(400).send('❌ Please upload a PDF file.');
     }
 
     const pdfBytes = fs.readFileSync(file.path);
     const pdfData = await pdfParse(pdfBytes);
-
-    // Extract text from PDF using pdf-parse
     const extractedText = pdfData.text;
 
-    // Create Word document using docx
+    if (!extractedText || extractedText.trim() === '') {
+      throw new Error('No text found in PDF (might be scanned or image-based)');
+    }
+
+    // ✅ Create Word Document
     const doc = new Document({
       sections: [
         {
           properties: {},
-          children: [
+          children: extractedText.split('\n').map(line =>
             new Paragraph({
-              children: [
-                new TextRun(extractedText), // Adding extracted text from PDF
-              ],
-            }),
-          ],
+              children: [new TextRun(line)],
+            })
+          ),
         },
       ],
     });
 
     const docxPath = path.join(__dirname, 'uploads', 'converted.docx');
-    
-    // Save the Word document
     const buffer = await Packer.toBuffer(doc);
     fs.writeFileSync(docxPath, buffer);
 
-    // Send the converted Word document to the user
     res.download(docxPath, 'converted.docx', () => {
-      cleanup([file.path, docxPath]); // Cleanup uploaded file and converted file
+      cleanup([file.path, docxPath]);
     });
   } catch (err) {
-    console.error('Error converting PDF to Word:', err);
+    console.error('❌ Error converting PDF to Word:', err.message);
     res.status(500).send('Something went wrong while converting the PDF to Word.');
   }
 });
 
 
 // Crop PDF endpoint
-app.post('/crop-pdf', upload.single('file'), async (req, res) => {
+app.post('/crop-pdf', upload.single('pdf'), async (req, res) => {
   try {
-    const { file } = req;
-    if (!file) {
-      return res.status(400).send('Please upload a PDF file.');
-    }
+    const cropBox = JSON.parse(req.body.cropBox);
+    const previewSize = JSON.parse(req.body.previewSize);
+    const inputPath = req.file.path;
+    const outputPath = path.join(__dirname, 'outputs', `cropped-${Date.now()}.pdf`);
 
-    const pdfBytes = fs.readFileSync(file.path);
-    const pdfDoc = await PDFDocument.load(pdfBytes);
+    await cropPdf(inputPath, outputPath, cropBox, previewSize);
 
-    // Define the crop area (for example, cropping the center 500x500 area)
-    const cropX = 50;   // x-coordinate to start cropping
-    const cropY = 50;   // y-coordinate to start cropping
-    const cropWidth = 500; // Width of the crop area
-    const cropHeight = 500; // Height of the crop area
+    const resultBuffer = fs.readFileSync(outputPath);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(resultBuffer);
 
-    // Crop each page of the PDF
-    const pages = pdfDoc.getPages();
-    pages.forEach(page => {
-      const { width, height } = page.getSize();
-
-      // Apply crop to the page: Setting the crop box
-      page.setCropBox(cropX, cropY, cropWidth, cropHeight);
-
-      // Optionally, you can resize the page to fit the cropped area
-      page.setSize(cropWidth, cropHeight);
-    });
-
-    // Save the modified PDF
-    const modifiedPdfBytes = await pdfDoc.save();
-    const outputPath = path.join(__dirname, 'uploads', 'cropped.pdf');
-    fs.writeFileSync(outputPath, modifiedPdfBytes);
-
-    // Send the cropped PDF back as a response
-    res.download(outputPath, 'cropped.pdf', () => {
-      cleanup([file.path, outputPath]);
-    });
+    fs.unlinkSync(inputPath);
+    fs.unlinkSync(outputPath);
   } catch (err) {
-    console.error('Error cropping PDF:', err);
-    res.status(500).send('Something went wrong while cropping the PDF.');
+    console.error('Crop PDF Error:', err);
+    res.status(500).send('Cropping failed.');
   }
 });
-
 
 // Redact PDF endpoint
-app.post('/redact-pdf', upload.single('file'), async (req, res) => {
+app.post('/api/redact', upload.single('file'), async (req, res) => {
   try {
-    const { file } = req;
-    if (!file) {
-      return res.status(400).send('Please upload a PDF file.');
-    }
+    const inputPath = req.file.path;
+    const outputPath = `uploads/redacted-${Date.now()}.pdf`;
+    const redactions = JSON.parse(req.body.redactions);
 
-    const pdfBytes = fs.readFileSync(file.path);
-    const pdfDoc = await PDFDocument.load(pdfBytes);
+    await redactPdf(inputPath, outputPath, redactions);
 
-    const pages = pdfDoc.getPages();
-    
-    // Define the area to redact (for example, by coordinates or specific text)
-    const redactArea = { x: 100, y: 100, width: 200, height: 30 }; // Sample coordinates
-    const redactionColor = rgb(0, 0, 0); // Black for redaction
-
-    pages.forEach(page => {
-      // Draw a rectangle over the area to redact
-      page.drawRectangle({
-        x: redactArea.x,
-        y: redactArea.y,
-        width: redactArea.width,
-        height: redactArea.height,
-        color: redactionColor,
-        opacity: 1,
-      });
-    });
-
-    const modifiedPdfBytes = await pdfDoc.save();
-    const outputPath = path.join(__dirname, 'uploads', 'redacted.pdf');
-    fs.writeFileSync(outputPath, modifiedPdfBytes);
-
-    // Send the redacted PDF back as a response
-    res.download(outputPath, 'redacted.pdf', () => {
-      cleanup([file.path, outputPath]);
-    });
+    res.download(outputPath);
   } catch (err) {
-    console.error('Error redacting PDF:', err);
-    res.status(500).send('Error redacting the PDF.');
+    console.error('Redact Error:', err);
+    res.status(500).send('Redaction failed.');
   }
 });
+
 
 // Compare PDFs endpoint
 app.post('/compare-pdfs', upload.array('pdfs', 2), async (req, res) => {
   try {
     const { files } = req;
-
     if (!files || files.length !== 2) {
       return res.status(400).send('Please upload exactly two PDF files.');
     }
@@ -500,85 +435,81 @@ app.post('/compare-pdfs', upload.array('pdfs', 2), async (req, res) => {
     const pdf1Path = files[0].path;
     const pdf2Path = files[1].path;
 
-    // Extract text from both PDFs
-    const pdf1Data = fs.readFileSync(pdf1Path);
-    const pdf2Data = fs.readFileSync(pdf2Path);
+    const safePdf1 = sanitizePdf(pdf1Path, `${pdf1Path}_safe.pdf`);
+    const safePdf2 = sanitizePdf(pdf2Path, `${pdf2Path}_safe.pdf`);
 
-    const pdf1Text = await pdfParse(pdf1Data);
-    const pdf2Text = await pdfParse(pdf2Data);
+    const pdf1Text = await pdfParse(fs.readFileSync(safePdf1));
+    const pdf2Text = await pdfParse(fs.readFileSync(safePdf2));
 
-    // Compare the extracted text from both PDFs
     const differences = compareText(pdf1Text.text, pdf2Text.text);
 
-    // Send back the differences as a response
-    res.json({ differences });
+    const totalScore = differences.reduce((sum, diff) => {
+      return sum + parseFloat(diff.similarity.replace('%', ''));
+    }, 0);
 
-    cleanup([pdf1Path, pdf2Path]);  // Cleanup the uploaded PDFs after processing
+    const averageSimilarity = (differences.length > 0)
+      ? (totalScore / differences.length).toFixed(1)
+      : 100.0;
+
+    cleanup([pdf1Path, pdf2Path, safePdf1, safePdf2]);
+
+    res.json({ differences, similarity: averageSimilarity });
   } catch (err) {
     console.error('Error comparing PDFs:', err);
     res.status(500).send('Something went wrong while comparing the PDFs.');
   }
 });
 
-// Function to compare text from two PDFs
-function compareText(text1, text2) {
-  let differences = [];
-
-  // Simple line-by-line comparison
-  const lines1 = text1.split('\n');
-  const lines2 = text2.split('\n');
-
-  const maxLength = Math.max(lines1.length, lines2.length);
-
-  for (let i = 0; i < maxLength; i++) {
-    if (lines1[i] !== lines2[i]) {
-      differences.push({ line: i + 1, pdf1: lines1[i], pdf2: lines2[i] });
-    }
-  }
-
-  return differences;
-}
 
 // OCR PDF endpoint
+// OCR PDF Route
 app.post('/ocr-pdf', upload.single('file'), async (req, res) => {
   try {
     const { file } = req;
     if (!file) {
-      return res.status(400).send('Please upload a PDF file.');
+      return res.status(400).send("No file uploaded.");
     }
 
     const pdfPath = file.path;
     const outputDir = path.dirname(pdfPath);
-    const outputImagePath = path.join(outputDir, 'page_image.png'); // Output image path
+    const outputImagePath = path.join(outputDir, "ocr_page-1.png"); // ✅ pdf-poppler creates -1 suffix
 
-    // Convert the first page of PDF to an image using pdf2pic
-    const convertPDF = fromPath(pdfPath, {
-      width: 1200,
-      height: 1600,
+    // Convert first page of PDF to PNG image
+    const options = {
+      format: "png",
+      out_dir: outputDir,
+      out_prefix: "ocr_page",
+      page: 1,
+      resolution: 200
+    };
+
+    await convert(pdfPath, options);
+
+    // Perform OCR using Tesseract.js
+    const result = await Tesseract.recognize(outputImagePath, "eng", {
+      logger: (m) => console.log(m), // Logs OCR progress
     });
 
-    // Convert the first page (index 0)
-    const image = await convertPDF(1);
-    fs.writeFileSync(outputImagePath, image);
+    const extractedText = result.data.text;
 
-    // Run OCR on the image using Tesseract.js
-    Tesseract.recognize(
-      outputImagePath,
-      'eng',
-      {
-        logger: (m) => console.log(m), // Optional logger to monitor OCR process
-      }
-    ).then(({ data: { text } }) => {
-      console.log('OCR Text: ', text);
+    // Clean up uploaded PDF and generated image
+    fs.unlinkSync(pdfPath);
+    fs.unlinkSync(outputImagePath);
 
-      // Send the OCR text back as the response
-      res.json({ text });
-    });
+    // Respond with extracted text as downloadable .txt
+    res.setHeader("Content-Disposition", "attachment; filename=ocr_output.txt");
+    res.setHeader("Content-Type", "text/plain");
+    res.send(extractedText);
 
-  } catch (err) {
-    console.error('Error during OCR on PDF:', err);
-    res.status(500).send('Something went wrong while processing the PDF.');
+  } catch (error) {
+    console.error("❌ OCR Error:", error);
+    res.status(500).send("Error during OCR process.");
   }
+});
+
+// Start server
+app.listen(port, () => {
+  console.log(`✅ OCR Server running at http://localhost:${port}`);
 });
 
 
@@ -746,22 +677,33 @@ app.post('/remove-pages', upload.single('file'), async (req, res) => {
 
 // Route to convert HTML to PDF
 app.post('/convert-html-to-pdf', async (req, res) => {
-  const { html } = req.body;  // This will now properly destructure the 'html' property from the request body
+  const { html } = req.body;
+
+  if (!html || typeof html !== 'string') {
+    return res.status(400).send('Invalid HTML or URL input.');
+  }
 
   try {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+      headless: 'new', // Fix for some Puppeteer issues on newer Node.js
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
     const page = await browser.newPage();
-  
-    // Set the HTML content to the page
-    await page.setContent(html);
-  
-    // Generate PDF from the HTML content
+
+    // ✅ If it's a valid URL, treat as link
+    if (/^https?:\/\//i.test(html.trim())) {
+      await page.goto(html, { waitUntil: 'networkidle2' });
+    } else {
+      await page.setContent(html);
+    }
+
     const pdfBuffer = await page.pdf({ format: 'A4' });
-  
+
     await browser.close();
-  
-    // Send the generated PDF as a response
+
     res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=converted.pdf');
     res.send(pdfBuffer);
   } catch (error) {
     console.error('Error during HTML to PDF conversion:', error);
@@ -774,358 +716,390 @@ app.listen(port, () => {
 });
 
 
-
-// Function to rotate PDF (handling different rotation angles)
-
-const { degrees } = require('pdf-lib');
-
-async function rotatePdf(pdfPath, outputPdfPath, rotationAngle) {
+// =========================
+// 📌 Rotate PDF Endpoint
+// =========================
+/* ✅ PDF ROTATION HANDLER */
+// ✅ EXAMPLE 3: Rotate PDF
+app.post('/rotate-pdf', uploadPDF.single('file'), async (req, res) => {
   try {
-    const pdfBytes = fs.readFileSync(pdfPath);
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const pages = pdfDoc.getPages();
-
-    // Normalize to nearest 90-degree increment
-    const normalizedAngle = Math.round(rotationAngle / 90) * 90;
-    
-    // Convert to pdf-lib's Rotation object
-    const rotation = degrees(normalizedAngle);
-
-    // Rotate each page
-    pages.forEach((page) => {
-      page.setRotation(rotation);
-    });
-
-    const pdfBytesOutput = await pdfDoc.save();
-    fs.writeFileSync(outputPdfPath, pdfBytesOutput);
-
-    console.log('PDF rotated and saved:', outputPdfPath);
-  } catch (err) {
-    console.error('Error rotating the PDF:', err);
-    throw err;
-  }
-}
-// API Route to handle PDF rotation
-app.post('/rotate-pdf', upload.single('file'), async (req, res) => {
-  try {
-    const { file } = req;
-    if (!file) {
-      return res.status(400).send('No file uploaded.');
-    }
-    if (![0, 90, 180, 270].includes(normalizedAngle)) {
-      throw new Error('Rotation must be 0, 90, 180, or 270 degrees');
-    }
-
-    const pdfPath = file.path; // Path to the uploaded PDF file
-    const outputPdfPath = path.join(__dirname, 'uploads', 'rotated_output.pdf'); // Path to save the rotated PDF
-    const rotationAngle = parseInt(req.body.angle) || 90; // Get the rotation angle from the request body (defaults to 90 degrees)
-
-    await rotatePdf(pdfPath, outputPdfPath, rotationAngle); // Call the function to rotate the PDF
-
-    // Check if the file exists before sending
-    if (fs.existsSync(outputPdfPath)) {
-      res.download(outputPdfPath, 'rotated_output.pdf', (err) => {
-        fs.unlinkSync(file.path);  // Cleanup the uploaded PDF after sending it
-        fs.unlinkSync(outputPdfPath);  // Cleanup the rotated PDF after sending it
-      });
-    } else {
-      res.status(500).send('Error: Rotated PDF file not found.');
-    }
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).send(err.message || 'Failed to rotate PDF');
-  }
-});
-
-// Route to handle adding watermark
-app.post('/add-watermark', upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).send('Please upload a PDF file.');
-    }
+    let angle = 0;
+    if (req.body.direction === 'left') angle = -90;
+    if (req.body.direction === 'right') angle = 90;
 
     const pdfBuffer = fs.readFileSync(req.file.path);
     const pdfDoc = await PDFDocument.load(pdfBuffer);
-    
-    const watermarkText = req.body.watermark || 'Watermark';  // Default watermark text
-
-    // Loop through all pages and add watermark
     const pages = pdfDoc.getPages();
-    pages.forEach(page => {
-      const { width, height } = page.getSize();
-      
-      // Set the font size and color
-      const fontSize = 50;
-      const color = rgb(0, 0, 0);  // Black color for the watermark
 
-      // Draw watermark text at the center of the page
-      page.drawText(watermarkText, {
-        x: width / 4, // Position the watermark on the page (centered)
-        y: height / 2,
-        size: fontSize,
-        color: color,
-      });
+    pages.forEach((page) => {
+      page.setRotation(degrees(angle));
     });
 
-    // Save the modified PDF
-    const watermarkedPdfBytes = await pdfDoc.save();
-    
-    // Save the watermarked PDF to a new file
-    const outputPath = path.join(__dirname, 'uploads', 'watermarked_pdf.pdf');
-    fs.writeFileSync(outputPath, watermarkedPdfBytes);
+    const rotatedPdf = await pdfDoc.save();
+    const outputPath = path.join(__dirname, 'uploads', 'rotated.pdf');
+    fs.writeFileSync(outputPath, rotatedPdf);
 
-    // Send the watermarked PDF to the user
-    res.download(outputPath, 'watermarked_pdf.pdf', () => {
-      cleanup([req.file.path, outputPath]);
+    res.download(outputPath, 'rotated.pdf', () => {
+      fs.unlinkSync(req.file.path);
+      fs.unlinkSync(outputPath);
     });
-
   } catch (err) {
-    console.error('Error adding watermark:', err);
-    res.status(500).send('Something went wrong while adding the watermark.');
+    console.error('Rotate error:', err);
+    res.status(500).send('Failed to rotate PDF');
   }
 });
 
-
-// POST route to handle PDF signing
-app.post('/sign-pdf', upload.fields([{ name: 'pdfFile', maxCount: 1 }, { name: 'signatureImage', maxCount: 1 }]), async (req, res) => {
+//sign pdf ///
+app.post('/sign-pdf', upload.fields([
+  { name: 'pdf', maxCount: 1 },
+  { name: 'imageSignature', maxCount: 1 }
+]), async (req, res) => {
   try {
-    // Get the uploaded files
-    const pdfFile = req.files['pdfFile'][0];
-    const signatureImage = req.files['signatureImage'][0];
+    const pdfPath = req.files?.pdf?.[0]?.path;
+    const imageUploadPath = req.files?.imageSignature?.[0]?.path;
+    const signatureText = req.body.signatureText;
+    const signatureImage = req.body.signatureImage; // base64 if using canvas
+    const fontChoice = req.body.font || 'Helvetica';
 
-    if (!pdfFile || !signatureImage) {
-      return res.status(400).send('Please upload both PDF and signature image.');
+    const x = parseInt(req.body.x) || 50;
+    const y = parseInt(req.body.y) || 50;
+
+    const pdfBytes = fs.readFileSync(pdfPath);
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    const page = pdfDoc.getPages()[0];
+
+    if (imageUploadPath) {
+      const imgBuffer = fs.readFileSync(imageUploadPath);
+      const embeddedImage = await pdfDoc.embedPng(imgBuffer);
+      page.drawImage(embeddedImage, { x, y, width: 150, height: 50 });
+    } else if (signatureImage) {
+      const base64Data = signatureImage.replace(/^data:image\/png;base64,/, "");
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+      const image = await pdfDoc.embedPng(imageBuffer);
+      page.drawImage(image, { x, y, width: 150, height: 50 });
+    } else if (signatureText) {
+      const font = await pdfDoc.embedFont(StandardFonts[fontChoice] || StandardFonts.Helvetica);
+      page.drawText(signatureText, {
+        x,
+        y,
+        size: 20,
+        font,
+        color: rgb(0, 0, 0),
+      });
     }
 
-    // Load the PDF and the signature image
-    const pdfBuffer = fs.readFileSync(pdfFile.path);
-    const signatureImageBuffer = fs.readFileSync(signatureImage.path);
+    const finalPdf = await pdfDoc.save();
+    const outputPath = path.join('uploads', `signed_${Date.now()}.pdf`);
+    fs.writeFileSync(outputPath, finalPdf);
 
-    // Load the PDF document using pdf-lib
-    const pdfDoc = await PDFDocument.load(pdfBuffer);
-    const page = pdfDoc.getPages()[0];  // Use the first page for the signature
-
-    // Embed the signature image
-    const signatureImageEmbed = await pdfDoc.embedPng(signatureImageBuffer);
-
-    // Get the page's dimensions to position the signature
-    const { width, height } = page.getSize();
-
-    // Draw the signature on the page (adjust coordinates as needed)
-    page.drawImage(signatureImageEmbed, {
-      x: width - 200,  // Position the signature on the bottom-right corner
-      y: 50,
-      width: 150,  // Width of the signature
-      height: 50,  // Height of the signature
+    res.download(outputPath, 'signed.pdf', () => {
+      fs.unlinkSync(pdfPath);
+      if (imageUploadPath) fs.unlinkSync(imageUploadPath);
+      fs.unlinkSync(outputPath);
     });
-
-    // Save the modified PDF
-    const signedPdfBytes = await pdfDoc.save();
-
-    // Save the signed PDF to a new file
-    const outputPath = path.join(__dirname, 'uploads', 'signed_pdf.pdf');
-    fs.writeFileSync(outputPath, signedPdfBytes);
-
-    // Send the signed PDF to the user
-    res.download(outputPath, 'signed_pdf.pdf', () => {
-      // Clean up uploaded files
-      cleanup([pdfFile.path, signatureImage.path, outputPath]);
-    });
-
   } catch (err) {
-    console.error('Error signing the PDF:', err);
-    res.status(500).send('Something went wrong while signing the PDF.');
+    console.error('❌ Sign PDF Error:', err);
+    res.status(500).send('Signing failed.');
   }
+});
+app.listen(port, () => {
+  console.log(`✅ Server running at http://localhost:${port}`);
 });
 
 
 // ---------------------------- JPG TO PDF ---------------------------//
 async function convertJpgToPdf(jpgPath, outputPdfPath) {
-  try {
-    const jpgBytes = fs.readFileSync(jpgPath);  // Read the JPG file
+  const jpgBytes = fs.readFileSync(jpgPath);
+  const pdfDoc = await PDFDocument.create();
+  const jpgImage = await pdfDoc.embedJpg(jpgBytes);
+  const { width, height } = jpgImage.scale(1);
 
-    const pdfDoc = await PDFDocument.create();  // Create a new PDF document
-    const jpgImage = await pdfDoc.embedJpg(jpgBytes);  // Embed the JPG image into the PDF
+  const page = pdfDoc.addPage([width, height]);
+  page.drawImage(jpgImage, { x: 0, y: 0, width, height });
 
-    const { width, height } = jpgImage.scale(1);  // Get the image dimensions
-
-    const page = pdfDoc.addPage([width, height]);  // Add a new page with the image dimensions
-    page.drawImage(jpgImage, {
-      x: 0,
-      y: 0,
-      width: width,
-      height: height,
-    });
-
-    const pdfBytesOutput = await pdfDoc.save();  // Save the PDF
-    fs.writeFileSync(outputPdfPath, pdfBytesOutput);  // Write the PDF to the output path
-    console.log(`PDF created at: ${outputPdfPath}`);
-  } catch (err) {
-    console.error('Error converting JPG to PDF:', err);
-  }
+  const pdfBytes = await pdfDoc.save();
+  fs.writeFileSync(outputPdfPath, pdfBytes);
 }
-
-// API Route to handle JPG to PDF conversion
-app.post('/convert-jpg-to-pdf', upload.single('file'), async (req, res) => {
+app.post('/convert-multiple-jpg-to-pdf', uploadJPG.array('files'), async (req, res) => {
   try {
-    const { file } = req;
-    if (!file) {
-      return res.status(400).send('No file uploaded.');
+    const files = req.files;
+    if (!files || files.length === 0) return res.status(400).send('No files uploaded.');
+
+    const pdfDoc = await PDFDocument.create();
+
+    for (const file of files) {
+      const jpgBytes = fs.readFileSync(file.path);
+      const jpgImage = await pdfDoc.embedJpg(jpgBytes);
+      const { width, height } = jpgImage.scale(1);
+
+      const page = pdfDoc.addPage([width, height]);
+      page.drawImage(jpgImage, { x: 0, y: 0, width, height });
     }
 
-    const jpgPath = file.path;  // Path to the uploaded JPG file
-    const outputPdfPath = path.join(__dirname, 'uploads', 'output.pdf');  // Path to save the converted PDF
+    const pdfBytes = await pdfDoc.save();
+    const outputPath = path.join('uploads', `combined_${Date.now()}.pdf`);
+    fs.writeFileSync(outputPath, pdfBytes);
 
-    await convertJpgToPdf(jpgPath, outputPdfPath);  // Call the function to convert JPG to PDF
-
-    res.download(outputPdfPath, 'output.pdf', () => {
-      fs.unlinkSync(file.path);  // Cleanup the uploaded JPG file after serving the PDF
-      fs.unlinkSync(outputPdfPath);  // Cleanup the generated PDF after sending it
+    res.download(outputPath, 'combined_images.pdf', (err) => {
+      if (err) console.error('Download error:', err);
+      setTimeout(() => {
+        try {
+          files.forEach(f => fs.unlinkSync(f.path));
+          fs.unlinkSync(outputPath);
+        } catch (e) {
+          console.error('Cleanup error:', e);
+        }
+      }, 2000);
     });
   } catch (err) {
-    console.error('Error processing the file:', err);
-    res.status(500).send('Error converting JPG to PDF.');
+    console.error('Multi-image JPG to PDF Error:', err);
+    res.status(500).send('Error converting images to PDF.');
   }
 });
 
 
 // ---------------------------- PDF TO JPG ---------------------------
-// Example code to send the JPG file as a blob to the client
-app.post('/convert-pdf-to-jpg', upload.single('file'), async (req, res) => {
+// ✅ Set this line to force 'magick' CLI instead of gm/convert
+
+app.post("/convert-pdf-to-jpg", upload.single("file"), async (req, res) => {
   try {
-    const { file } = req;
-    if (!file) {
-      return res.status(400).send('Please upload a PDF file.');
-    }
+    const filePath = req.file.path;
+    const outputDir = path.join(__dirname, "outputs", path.parse(filePath).name);
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-    const pdfPath = file.path;
-    const outputDir = path.dirname(pdfPath);
-    const outputPrefix = path.basename(pdfPath, path.extname(pdfPath));
+    const cmd = `pdftoppm -jpeg -r 150 "${filePath}" "${path.join(outputDir, "page")}"`;
+    console.log("⚙️ Running Poppler CLI command:\n", cmd);
 
-    const options = {
-      format: 'jpeg',
-      out_dir: outputDir,
-      out_prefix: outputPrefix,
-      page: null,
-    };
+    exec(cmd, (error) => {
+      if (error) {
+        console.error("❌ Exec error:", error);
+        return res.status(500).send("Failed to convert PDF to images.");
+      }
 
-    await pdf.convert(pdfPath, options);
+      const imageFiles = fs.readdirSync(outputDir)
+        .filter((f) => f.endsWith(".jpg"))
+        .map((f) => path.join(outputDir, f));
 
-    const jpgFilePath = path.join(outputDir, `${outputPrefix}-1.jpg`);
+      if (imageFiles.length === 0) {
+        return res.status(500).send("❌ No images were generated.");
+      }
 
-    // Ensure that the file exists before sending it
-    if (fs.existsSync(jpgFilePath)) {
-      res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Content-Disposition', 'attachment; filename="converted_image.jpg"');
-      const fileStream = fs.createReadStream(jpgFilePath);
-      fileStream.pipe(res);
+      const zipPath = path.join(outputDir, "converted_images.zip");
+      const zipStream = fs.createWriteStream(zipPath);
+      const archive = archiver("zip");
 
-      // Cleanup the generated file after sending it
-      fileStream.on('end', () => {
-        cleanup([file.path, jpgFilePath]);
+      zipStream.on("close", () => {
+        console.log("✅ ZIP file ready. Sending to client...");
+
+        res.download(zipPath, "converted_images.zip", (err) => {
+          if (err) {
+            console.error("❌ Download error:", err);
+          } else {
+            console.log("✅ Download completed.");
+          }
+
+          // 🔁 Delayed cleanup to prevent EPERM
+          setTimeout(() => {
+            console.log("🧹 Cleaning up files...");
+            try {
+              cleanup([filePath, zipPath, ...imageFiles]);
+              fs.rmSync(outputDir, { recursive: true, force: true });
+            } catch (cleanupErr) {
+              console.error("⚠️ Cleanup error:", cleanupErr);
+            }
+          }, 2000);
+        });
       });
-    } else {
-      res.status(500).send('Error: JPG file not generated.');
-    }
+
+      archive.on("error", (err) => {
+        console.error("❌ ZIP creation error:", err);
+        res.status(500).send("Error creating zip file.");
+      });
+
+      archive.pipe(zipStream);
+      imageFiles.forEach((img) => {
+        archive.file(img, { name: path.basename(img) });
+      });
+      archive.finalize();
+    });
   } catch (err) {
-    console.error('Error converting PDF to JPG:', err);
-    res.status(500).send('Something went wrong while converting the PDF to JPG.');
+    console.error("❌ Fatal error in route:", err);
+    res.status(500).send("Unexpected server error.");
   }
 });
 
-// ---------------------------- EXCEL TO PDF ---------------------------
-app.post('/convert-excel-to-pdf', uploadExcel.single('file'), async (req, res) => {
+// ---------------------------- PDF TO EXCEL ---------------------------
+// ✅ PDF to Excel Route (with accurate formatting)
+// ✅ PDF to Excel Route
+app.post('/convert-pdf-to-excel', upload.single('pdf'), async (req, res) => {
   try {
-    const { file } = req;
-    if (!file) return res.status(400).send('No Excel file uploaded');
+    const inputPdf = path.resolve(req.file.path).replace(/\\/g, '/');
+    const outputDir = path.dirname(inputPdf);
+    const baseName = path.basename(inputPdf, '.pdf');
 
-    const excelPath = file.path;  // Get the uploaded Excel file path
-    const outputDir = path.dirname(excelPath);
-    const outputPdfPath = path.join(outputDir, 'converted.pdf'); // Path for saving PDF
+    // Run pdf2json
+    const cmd = `pdf2json -f "${inputPdf}" -o "${outputDir}"`;
+    console.log('📄 Running:', cmd);
+    execSync(cmd);
 
-    // Step 1: Read the Excel file using exceljs
+    // Try to find the output JSON file
+    let jsonFile = '';
+    const files = fs.readdirSync(outputDir);
+    for (const file of files) {
+      if (file.includes(baseName) && file.endsWith('.json')) {
+        jsonFile = path.join(outputDir, file);
+        break;
+      }
+    }
+
+    if (!jsonFile || !fs.existsSync(jsonFile)) {
+      throw new Error('PDF to JSON failed. File not found.');
+    }
+
+    const json = fs.readFileSync(jsonFile);
+    const parsed = JSON.parse(json);
+
+    // ✅ Support both possible structures
+    const pages = parsed.Pages || (parsed.formImage && parsed.formImage.Pages);
+    if (!pages) {
+      throw new Error('❌ Could not find Pages in parsed PDF JSON.');
+    }
+
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(excelPath);
-    const worksheet = workbook.getWorksheet(1); // Read first sheet
+    const sheet = workbook.addWorksheet('Sheet 1');
 
-    // Step 2: Convert Excel data to HTML
-    let htmlContent = '<table border="1"><thead><tr>';
+      let row = 1;
+    for (const page of pages) {
+      const lines = new Map();
+      for (const block of page.Texts) {
+        const y = block.y.toFixed(1);
+        const x = block.x;
+        const text = decodeURIComponent(block.R.map(r => r.T).join(''));
 
-    worksheet.columns.forEach((column) => {
-      htmlContent += `<th>${column.header}</th>`;
-    });
+        if (!lines.has(y)) lines.set(y, []);
+        lines.get(y).push({ x, text, TS: block.R[0].TS });
+      }
 
-    htmlContent += '</tr></thead><tbody>';
+      const sortedLines = [...lines.entries()].sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]));
 
-    worksheet.eachRow({ includeEmpty: true }, (row) => {
-      htmlContent += '<tr>';
-      row.eachCell({ includeEmpty: true }, (cell) => {
-        htmlContent += `<td>${cell.text}</td>`;
+      for (const [, line] of sortedLines) {
+        line.sort((a, b) => a.x - b.x);
+
+        const fullLine = line.map(t => t.text).join('').trim();
+        const fontSize = line[0].TS?.[1] || 11;
+        const isBold = line[0].TS?.[2] === 1;
+
+        const cell = sheet.getCell(`A${row}`);
+        cell.value = fullLine;
+        cell.font = {
+          size: fontSize,
+          bold: isBold,
+          color: { argb: 'FF000000' }
+        };
+        row++;
+      }
+    }
+
+
+    const outputExcel = path.join(outputDir, `${baseName}.xlsx`);
+    await workbook.xlsx.writeFile(outputExcel);
+
+    res.download(outputExcel, 'converted.xlsx', (err) => {
+      if (err) {
+        console.error('❌ Download failed:', err);
+        return res.status(500).send('Download failed.');
+      }
+
+      // Cleanup
+      [inputPdf, jsonFile, outputExcel].forEach(f => {
+        if (fs.existsSync(f)) fs.unlinkSync(f);
       });
-      htmlContent += '</tr>';
     });
 
-    htmlContent += '</tbody></table>';
-
-    // Step 3: Use puppeteer to convert HTML content to PDF
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-
-    // Set the HTML content to be rendered in Puppeteer
-    await page.setContent(htmlContent);
-
-    // Generate PDF from the HTML content
-    await page.pdf({ path: outputPdfPath, format: 'A4' });
-
-    await browser.close();
-
-    // Send the generated PDF to the client
-    res.download(outputPdfPath, 'converted.pdf', () => {
-      cleanup([file.path, outputPdfPath]);
-    });
   } catch (err) {
-    console.error('Error during Excel to PDF conversion:', err);
-    res.status(500).send('Something went wrong while converting the Excel to PDF.');
+    console.error('❌ Conversion Error:', err.message);
+    res.status(500).send(`Conversion failed: ${err.message}`);
   }
+});
+
+app.listen(port, () => {
+  console.log(`✅ Server running on http://localhost:${port}`);
+});
+
+
+// ---------------------------- EXCEL TO PDF ---------------------------
+app.post('/convert-excel-to-pdf', uploadExcel.single('excel'), async (req, res) => {
+  try {
+    const excelPath = req.file.path;
+    const pdfPath = path.join(__dirname, 'outputs', 'converted.pdf');
+
+    // 🧠 Read Excel File
+    const workbook = XLSX.readFile(excelPath);
+    const sheetName = workbook.SheetNames[0];
+    const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
+
+    // 📄 Create PDF with PDFKit
+    const doc = new PDFKitDocument({ margin: 30 });
+    const writeStream = fs.createWriteStream(pdfPath);
+    doc.pipe(writeStream);
+
+    doc.fontSize(14).font('Times-Roman');
+
+    // 📊 Write rows from Excel
+    sheet.forEach((row, index) => {
+      const line = row.map(cell => (cell !== undefined ? String(cell) : '')).join('    ');
+      doc.text(line);
+    });
+
+    doc.end();
+
+    writeStream.on('finish', () => {
+      res.download(pdfPath, 'converted.pdf', (err) => {
+        if (err) return res.status(500).send('❌ Download failed.');
+        fs.unlinkSync(pdfPath);
+        fs.unlinkSync(excelPath);
+      });
+    });
+
+  } catch (err) {
+    console.error('❌ Excel to PDF Error:', err);
+    res.status(500).send('Conversion failed.');
+  }
+});
+
+app.listen(port, () => {
+  console.log(`🚀 Server running on http://localhost:${port}`);
 });
 
 
 // ---------------------------- PDF MERGE ---------------------------
-app.post('/merge', uploadPDF.array('files', 2), async (req, res) => {
+app.post('/merge', upload.array('files', 10), async (req, res) => {
   try {
-    const { files } = req;
-    if (files.length !== 2) {
-      return res.status(400).send('Please upload exactly two PDF files.');
+    const pdfDocs = await Promise.all(
+      req.files.map((file) => PDFDocument.load(fs.readFileSync(file.path)))
+    );
+
+    const mergedPdf = await PDFDocument.create();
+    for (const pdfDoc of pdfDocs) {
+      const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+      copiedPages.forEach((page) => mergedPdf.addPage(page));
     }
 
-    const pdfDoc = await PDFDocument.create();
-
-    const firstPdfBytes = fs.readFileSync(files[0].path);
-    const firstPdf = await PDFDocument.load(firstPdfBytes);
-    const firstPdfPages = await pdfDoc.copyPages(firstPdf, firstPdf.getPageIndices());
-    firstPdfPages.forEach((page) => {
-      pdfDoc.addPage(page);
-    });
-
-    const secondPdfBytes = fs.readFileSync(files[1].path);
-    const secondPdf = await PDFDocument.load(secondPdfBytes);
-    const secondPdfPages = await pdfDoc.copyPages(secondPdf, secondPdf.getPageIndices());
-    secondPdfPages.forEach((page) => {
-      pdfDoc.addPage(page);
-    });
-
-    const mergedPdfBytes = await pdfDoc.save();
+    const finalPdf = await mergedPdf.save();
     const outputPath = path.join(__dirname, 'uploads', 'merged.pdf');
-    fs.writeFileSync(outputPath, mergedPdfBytes);
+    fs.writeFileSync(outputPath, finalPdf);
 
     res.download(outputPath, 'merged.pdf', () => {
-      cleanup([files[0].path, files[1].path, outputPath]);
+      // Clean up
+      req.files.forEach((f) => fs.unlinkSync(f.path));
+      fs.unlinkSync(outputPath);
     });
   } catch (err) {
-    console.error("Error during PDF merging:", err);
-    res.status(500).send('Something went wrong while merging PDFs.');
+    console.error(err);
+    res.status(500).send('Failed to merge PDFs');
   }
 });
+
 
 // ---------------------------- WORD TO PDF ---------------------------
 app.post('/convert-word-to-pdf', uploadDOCX.single('file'), async (req, res) => {
@@ -1163,144 +1137,295 @@ app.post('/convert-word-to-pdf', uploadDOCX.single('file'), async (req, res) => 
   }
 });
 
+// ---------------------------- PDF TO POWERPOINT---------------------------
+// 📤 Route: PDF to PowerPoint
+app.post('/api/convert-pdf-to-ppt', upload.single('file'), async (req, res) => {
+  try {
+    const pptBuffer = await convertPdfToPpt(req.file.path);
+    res.setHeader('Content-Disposition', 'attachment; filename=converted.pptx');
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    );
+    res.send(pptBuffer);
+  } catch (err) {
+    console.error('❌ PDF to PPT error:', err);
+    res.status(500).send('Failed to convert PDF to PowerPoint');
+  }
+});
+
+app.listen(port, () => {
+  console.log(`🚀 Server running on http://localhost:${port}`);
+});
 // ---------------------------- POWERPOINT TO PDF ---------------------------
-app.post('/convert-powerpoint-to-pdf', uploadPDF.single('file'), async (req, res) => {
+app.post('/convert-powerpoint-to-pdf', uploadPPT.single('file'), async (req, res) => {
+
   try {
     const { file } = req;
     if (!file) return res.status(400).send('No PowerPoint file uploaded');
 
-    const pptxPath = file.path;  // Get the uploaded PowerPoint file path
+    const pptxPath = file.path;
     const outputDir = path.dirname(pptxPath);
-    const outputPdfPath = path.join(outputDir, 'converted.pdf'); // Path for saving PDF
+    const outputPdfPath = path.join(outputDir, 'converted.pdf');
 
-    // Convert PowerPoint to PDF using pptx2pdf
-    pptx2pdf(pptxPath, outputPdfPath)
-      .then(() => {
-        res.download(outputPdfPath, 'converted.pdf', () => {
-          cleanup([file.path, outputPdfPath]);
-        });
-      })
-      .catch((err) => {
-        console.error('Error during PowerPoint to PDF conversion:', err);
-        res.status(500).send('Something went wrong while converting the PowerPoint to PDF.');
-      });
+    await pptx2pdf(pptxPath, outputPdfPath); // ✅ Await instead of .then()
+    res.download(outputPdfPath, 'converted.pdf', () => {
+      cleanup([file.path, outputPdfPath]);
+    });
   } catch (err) {
     console.error('Error during PowerPoint to PDF conversion:', err);
     res.status(500).send('Something went wrong while converting the PowerPoint to PDF.');
   }
 });
 
+
 // ---------------------------- COMPRESS PDF ---------------------------
+const compressPdfWithGhostscript = (inputPath, outputPath, level) => {
+  const quality = {
+    extreme: '/screen',
+    recommended: '/ebook'
+  }[level] || '/ebook';
+
+  const ghostscriptPath = `"C:\\Program Files\\gs\\gs10.05.1\\bin\\gswin64c.exe"`; // ✅ Full path with double quotes
+
+  const command = `${ghostscriptPath} -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${quality} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${inputPath}"`;
+
+  console.log("Running command:", command); // 🐞 Optional debug
+  execSync(command);
+};
+
 app.post('/compress', uploadPDF.single('file'), async (req, res) => {
   try {
     const { file } = req;
+    const level = req.body.level || 'recommended';
+
     if (!file) {
       return res.status(400).send('Please upload a PDF file.');
     }
 
-    const compressedPdfPath = path.join(__dirname, 'uploads', 'compressed.pdf');
-    fs.copyFileSync(file.path, compressedPdfPath);
+    const inputPath = file.path;
+    const outputPath = path.join(__dirname, 'uploads', 'compressed.pdf');
 
-    res.download(compressedPdfPath, 'compressed.pdf', () => {
-      cleanup([file.path, compressedPdfPath]);
+    compressPdfWithGhostscript(inputPath, outputPath, level);
+
+    res.download(outputPath, 'compressed.pdf', () => {
+      cleanup([inputPath, outputPath]);
     });
+
   } catch (err) {
-    console.error("Error during PDF compression:", err);
+    console.error("❌ Compression error:", err.message);
     res.status(500).send('Something went wrong while compressing the PDF.');
   }
 });
 
+
 // ---------------------------- SPLIT PDF ---------------------------
-app.post('/split', uploadPDF.single('file'), async (req, res) => {
+// Ensure directories exist
+['uploads', 'outputs', 'protected', 'public/thumbnails'].forEach(dir => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+});
+
+// 🟢 Write pages to PDFs
+async function writePagesToZip(pdfDoc, pageIndices, outputPrefix) {
+  const outputDir = path.join(__dirname, 'outputs');
+  const tempFiles = [];
+
+  for (let i = 0; i < pageIndices.length; i++) {
+    const newPdf = await PDFDocument.create();
+    const [copiedPage] = await newPdf.copyPages(pdfDoc, [pageIndices[i]]);
+    newPdf.addPage(copiedPage);
+
+    const pdfBytes = await newPdf.save();
+    const outputPath = path.join(outputDir, `${outputPrefix}_page${pageIndices[i] + 1}.pdf`);
+    fs.writeFileSync(outputPath, pdfBytes);
+    tempFiles.push(outputPath);
+  }
+
+  return tempFiles;
+}
+
+// 🟢 ZIP and stream to response
+function zipAndSend(filePaths, res) {
+  const archive = archiver('zip');
+  res.setHeader('Content-Disposition', 'attachment; filename=split_pages.zip');
+  res.setHeader('Content-Type', 'application/zip');
+
+  archive.pipe(res);
+  filePaths.forEach(file => {
+    const filename = path.basename(file);
+    archive.file(file, { name: filename });
+  });
+
+  archive.finalize();
+
+  // Cleanup after stream is done
+  res.on('finish', () => cleanup(filePaths));
+}
+
+// 🟢 Split: By Range
+async function splitByRange(inputPath, start, end, res) {
+  const pdfBytes = fs.readFileSync(inputPath);
+  const pdfDoc = await PDFDocument.load(pdfBytes);
+  const totalPages = pdfDoc.getPageCount();
+
+  if (start < 1 || end > totalPages || start > end) {
+    throw new Error(`Invalid range. PDF has ${totalPages} pages.`);
+  }
+
+  const indices = [];
+  for (let i = start - 1; i < end; i++) indices.push(i);
+  const files = await writePagesToZip(pdfDoc, indices, 'split_range');
+  return zipAndSend(files, res);
+}
+
+// 🟢 Split: By Specific Pages
+async function splitByPages(inputPath, pageArray, res) {
+  const pdfBytes = fs.readFileSync(inputPath);
+  const pdfDoc = await PDFDocument.load(pdfBytes);
+  const totalPages = pdfDoc.getPageCount();
+
+  const validPages = pageArray.filter(p => p >= 1 && p <= totalPages);
+  if (validPages.length === 0) throw new Error('No valid pages to split.');
+
+  const zeroIndexed = validPages.map(p => p - 1);
+  const files = await writePagesToZip(pdfDoc, zeroIndexed, 'split_pages');
+  return zipAndSend(files, res);
+}
+
+// 🟢 Split: All Pages
+async function splitAllPages(inputPath, res) {
+  const pdfBytes = fs.readFileSync(inputPath);
+  const pdfDoc = await PDFDocument.load(pdfBytes);
+  const totalPages = pdfDoc.getPageCount();
+
+  const indices = Array.from({ length: totalPages }, (_, i) => i);
+  const files = await writePagesToZip(pdfDoc, indices, 'split_all');
+  return zipAndSend(files, res);
+}
+
+// 🟢 Split Route
+app.post('/split', upload.single('file'), async (req, res) => {
+  const { mode, range, pages } = req.body;
+  const inputPath = req.file.path;
+
+  console.log('📥 PDF Split Request Received');
+  console.log('➡ File:', req.file.originalname);
+  console.log('➡ Mode:', mode);
+  console.log('➡ Range:', range);
+  console.log('➡ Pages:', pages);
+
   try {
-    const { file } = req;
-    if (!file) {
-      return res.status(400).send('Please upload a PDF file.');
+    if (mode === 'range' && range) {
+      const [start, end] = range.split('-').map(Number);
+      await splitByRange(inputPath, start, end, res);
+    } else if (mode === 'pages' && pages) {
+      const pageArray = pages.split(',').map(p => parseInt(p.trim()));
+      await splitByPages(inputPath, pageArray, res);
+    } else {
+      await splitAllPages(inputPath, res);
     }
-
-    const pdfBytes = fs.readFileSync(file.path);
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-
-    const pageCount = pdfDoc.getPageCount();
-    const outputPaths = [];
-
-    for (let i = 0; i < pageCount; i++) {
-      const singlePagePdf = await PDFDocument.create();
-      const [page] = await singlePagePdf.copyPages(pdfDoc, [i]);
-      singlePagePdf.addPage(page);
-
-      const splitPdfPath = path.join(__dirname, 'uploads', `split_page_${i + 1}.pdf`);
-      const splitPdfBytes = await singlePagePdf.save();
-      fs.writeFileSync(splitPdfPath, splitPdfBytes);
-
-      outputPaths.push(splitPdfPath);
-    }
-
-    const zipPath = path.join(__dirname, 'uploads', 'split_pages.zip');
-    const output = fs.createWriteStream(zipPath);
-    const archive = archiver('zip', { zlib: { level: 9 } });
-
-    output.on('close', () => {
-      res.download(zipPath, 'split_pages.zip', () => {
-        cleanup([file.path, ...outputPaths, zipPath]);
-      });
-    });
-
-    archive.pipe(output);
-
-    outputPaths.forEach((filePath) => {
-      archive.append(fs.createReadStream(filePath), { name: path.basename(filePath) });
-    });
-
-    archive.finalize();
   } catch (err) {
-    console.error("Error during PDF splitting:", err);
-    res.status(500).send('Something went wrong while splitting the PDF.');
+    console.error('🔥 Split PDF Error:', err.message);
+    res.status(500).send('Error splitting PDF');
   }
 });
 
-// ---------------------------- PDF TO EXCEL ---------------------------
-app.post('/convert-pdf-to-excel', uploadPDF.single('file'), async (req, res) => {
-  try {
-    const { file } = req;
-    if (!file) return res.status(400).send('No file uploaded');
+// ✅ Health check
+app.get('/', (req, res) => res.send('✅ Server is running!'));
 
-    const pdfPath = file.path; // Get the uploaded PDF file path
-    const outputDir = path.dirname(pdfPath);
-    const outputExcelPath = path.join(outputDir, 'converted.xlsx'); // Path for saving Excel file
-
-    // Read the PDF file buffer
-    const pdfBuffer = fs.readFileSync(pdfPath);
-
-    // Parse the PDF to extract text
-    const data = await pdfParse(pdfBuffer);
-
-    // Create a new Excel workbook
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Sheet 1');
-
-    // Split the PDF text by lines and add each line as a new row in Excel
-    const lines = data.text.split('\n');
-
-    lines.forEach((line) => {
-      worksheet.addRow([line]); // Add each line from the PDF as a row in Excel
-    });
-
-    // Save the Excel file
-    await workbook.xlsx.writeFile(outputExcelPath);
-    console.log('Excel file created:', outputExcelPath);
-
-    // Send the Excel file as a response
-    res.download(outputExcelPath, 'converted.xlsx', () => {
-      cleanup([file.path, outputExcelPath]);
-    });
-  } catch (err) {
-    console.error('Error during PDF to Excel conversion:', err);
-    res.status(500).send('Something went wrong while converting the PDF.');
-  }
-});
-
-// Start the server
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`🚀 Server running on http://localhost:${port}`);
+});
+
+
+//ORGANIZE PDF //
+app.post("/organize", upload.single("pdf"), async (req, res) => {
+  try {
+    const operations = JSON.parse(req.body.operations);
+    const inputPath = req.file.path;
+    const outputPath = path.join("outputs", `organized-${Date.now()}.pdf`);
+
+    await organizePdf({ inputPath, outputPath, operations });
+    res.download(outputPath);
+  } catch (err) {
+    console.error("Organize error:", err);
+    res.status(500).send("Failed to process PDF.");
+  }
+});
+
+
+// ✅ Watermark PDF
+app.post('/api/add-watermark', watermarkUpload, async (req, res) => {
+  try {
+    const { watermarkText, fontSize, opacity, customX, customY } = req.body;
+    const rotation = parseFloat(req.body.rotation) || 0; // ✅ Rotation in degrees
+
+    const pdfFile = req.files?.['pdf']?.[0];
+    const imageFile = req.files?.['image']?.[0];
+    if (!pdfFile) throw new Error('No PDF uploaded');
+
+    // ✅ Load and parse PDF
+    const pdfDoc = await PDFDocument.load(fs.readFileSync(pdfFile.path));
+    const page = pdfDoc.getPages()[0];
+    const { width: pdfWidth, height: pdfHeight } = page.getSize();
+
+    // ✅ Coordinates from frontend are already scaled to real PDF size
+    const x = parseFloat(customX) || 0;
+    const y = pdfHeight - (parseFloat(customY) || 0); // ✅ Flip Y
+
+    if (imageFile) {
+      // ✅ Embed watermark image
+      const imageBytes = fs.readFileSync(imageFile.path);
+      const extension = path.extname(imageFile.originalname).toLowerCase();
+      let imageEmbed;
+
+      if (extension === '.jpg' || extension === '.jpeg') {
+        imageEmbed = await pdfDoc.embedJpg(imageBytes);
+      } else if (extension === '.png') {
+        imageEmbed = await pdfDoc.embedPng(imageBytes);
+      } else {
+        throw new Error('Unsupported image format');
+      }
+
+      // ✅ Match preview size of ~120px width from frontend (normalized already)
+      const desiredWidthPx = 120;
+      const scaleRatio = desiredWidthPx / imageEmbed.width;
+      const scaledImage = imageEmbed.scale(scaleRatio);
+
+        page.drawImage(imageEmbed, {
+         x: x - scaledImage.width / 2,      // ✅ Fix center alignment
+        y: y - scaledImage.height / 2,     // ✅ Fix center alignment
+        width: scaledImage.width,
+        height: scaledImage.height,
+        opacity: parseFloat(opacity),
+        rotate: degrees(-rotation),// ✅ Image rotation
+
+      });
+
+    } else {
+      // ✅ Text fallback watermark
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const textWidth = font.widthOfTextAtSize(watermarkText, parseInt(fontSize));
+        const textHeight = font.heightAtSize(parseInt(fontSize));
+      page.drawText(watermarkText, {
+         x: x - textWidth / 2, // ✅ center text
+          y: y - textHeight / 2,   // ✅ Fix center alignment
+        size: parseInt(fontSize),
+        font,
+        color: rgb(0, 0, 0),
+        opacity: parseFloat(opacity),
+        rotate:degrees(-rotation), // ✅ Text rotation
+        
+      });
+    }
+
+    // ✅ Save and return file
+    const outputPath = path.join(__dirname, 'output', `${Date.now()}-watermarked.pdf`);
+    fs.writeFileSync(outputPath, await pdfDoc.save());
+    res.json({ url: '/output/' + path.basename(outputPath) });
+
+  } catch (err) {
+    console.error('Error applying watermark:', err);
+    res.status(500).send('Failed to add watermark');
+  }
 });

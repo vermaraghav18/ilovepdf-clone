@@ -1,3 +1,4 @@
+// src/pages/PdfToWordPage.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
 import '../styles/ComponentStyles.css';
@@ -5,62 +6,76 @@ import '../styles/ComponentStyles.css';
 function PdfToWordPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Handle file selection
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setSelectedFile(file);
-    setMessage(`📂 Selected file: ${file?.name}`);
+    setMessage(file ? `📂 Selected file: ${file.name}` : '');
   };
 
-  // Handle conversion on button click
   const handleConvertClick = async () => {
     if (!selectedFile) {
       setMessage('❌ Please select a PDF file to convert.');
       return;
     }
 
+    setMessage('⚙️ Converting PDF to Word...');
+    setLoading(true);
+
     const formData = new FormData();
     formData.append('file', selectedFile);
 
-    setMessage('⚙️ Converting PDF to Word...');
-
     try {
-      // Sending the PDF file to the backend for conversion
       const response = await axios.post('http://localhost:5000/convert-pdf-to-word', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         responseType: 'blob',
       });
 
-      // Create a link to download the Word document after conversion
-      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-      const link = document.createElement('a');
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
       const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
       link.href = url;
       link.download = 'converted_document.docx';
       link.click();
 
-      // Provide feedback to the user
       setMessage('✅ Successfully converted the PDF to Word!');
     } catch (error) {
       console.error(error);
       setMessage('❌ Conversion failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="tool-page">
-      <h2>Convert PDF to Word</h2>
-      <p>Upload a PDF, and we will convert it to a Word document.</p>
+    <div className="merge-pdf-container">
+      <h2 className="page-heading">Convert PDF to Word</h2>
 
-      <div className="upload-section">
-        <input type="file" accept="application/pdf" onChange={handleFileChange} />
-        <button className="upload-button" onClick={handleConvertClick}>
-          Convert to Word
-        </button>
-      </div>
+      <label htmlFor="file-input-word" className="custom-upload-box">
+        📁 Drag & Drop or Click to Upload PDF
+      </label>
+      <input
+        id="file-input-word"
+        type="file"
+        accept="application/pdf"
+        onChange={handleFileChange}
+        className="file-input hidden-input"
+      />
 
-      {message && <div className="upload-feedback"><p>{message}</p></div>}
+      <p className="message">{message}</p>
+
+      <button
+        className="merge-btn"
+        onClick={handleConvertClick}
+        disabled={loading}
+      >
+        {loading ? 'Converting...' : 'Convert to Word'}
+      </button>
+
+      {loading && <div className="loading-spinner"></div>}
     </div>
   );
 }

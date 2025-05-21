@@ -1,0 +1,14 @@
+/* src/styles/ExcelToPdf.css */
+.excel-to-pdf-container {
+  text-align: center;
+  margin-top: 50px;
+}
+
+.excel-to-pdf-container input {
+  margin: 10px;
+}
+
+.excel-to-pdf-container button {
+  padding: 8px 16px;
+  font-size: 16px;
+}

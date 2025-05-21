@@ -1,0 +1,59 @@
+/* src/styles/ProtectPdfStyles.css */
+
+.protect-pdf-container {
+    max-width: 600px;
+    margin: 80px auto;
+    background-color: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    text-align: center;
+  }
+  
+  .page-heading {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #034059;
+    margin-bottom: 10px;
+  }
+  
+  .subtext {
+    font-size: 1rem;
+    color: #555;
+    margin-bottom: 30px;
+  }
+  
+  .protect-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .input-field {
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+  
+  .protect-btn {
+    padding: 12px;
+    background-color: #ff6f00;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s ease;
+  }
+  
+  .protect-btn:hover {
+    background-color: #e65c00;
+  }
+  
+  .message {
+    margin-top: 12px;
+    font-size: 0.95rem;
+    color: #034059;
+  }
+  
