@@ -42,7 +42,8 @@ const archiver = require('archiver');
 
 
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 5000;
+
 
 // ✅ Storage engine
 const storage = multer.diskStorage({
@@ -183,8 +184,6 @@ app.get('/download/:filename', (req, res) => {
 });
 
 
-app.listen(port, () => console.log(`🚀 Server running at http://localhost:${port}`));
-
 
 // 🧠 Route: Edit PDF
 // Edit PDF route
@@ -200,9 +199,6 @@ app.post('/edit-pdf', async (req, res) => {
     res.status(500).send('Error editing PDF.');
   }
 });
-
-const PORT = 5000;
-app.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));
 
 //-------------- Function to SCAN PDF--------//
 
@@ -248,12 +244,6 @@ app.post('/scan-pdf', imageUpload.single('image'), (req, res) => {
   });
 });
 
-// Start the server
-app.listen(5000, () => {
-  console.log('Server is running on port 5000');
-});
-
-
 //-------------- UNLOCK PDF------------// 
 // 🧩 UNLOCK PDF ROUTE
 app.post('/unlock-pdf', upload.single('pdf'), async (req, res) => {
@@ -276,12 +266,6 @@ app.post('/unlock-pdf', upload.single('pdf'), async (req, res) => {
     });
   });
 });
-
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
-
-
 //-------------- PROTECT PDF------------// 
 // 🔐 PROTECT PDF
 app.post('/protect-pdf', upload.single('pdf'), async (req, res) => {
@@ -303,10 +287,6 @@ app.post('/protect-pdf', upload.single('pdf'), async (req, res) => {
       fs.unlinkSync(outputPdfPath);
     });
   });
-});
-
-app.listen(port, () => {
-  console.log(`✅ Server running at http://localhost:${port}`);
 });
 
 
@@ -505,11 +485,6 @@ app.post('/ocr-pdf', upload.single('file'), async (req, res) => {
     console.error("❌ OCR Error:", error);
     res.status(500).send("Error during OCR process.");
   }
-});
-
-// Start server
-app.listen(port, () => {
-  console.log(`✅ OCR Server running at http://localhost:${port}`);
 });
 
 
@@ -711,10 +686,6 @@ app.post('/convert-html-to-pdf', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
-
 
 // =========================
 // 📌 Rotate PDF Endpoint
@@ -802,10 +773,6 @@ app.post('/sign-pdf', upload.fields([
     res.status(500).send('Signing failed.');
   }
 });
-app.listen(port, () => {
-  console.log(`✅ Server running at http://localhost:${port}`);
-});
-
 
 // ---------------------------- JPG TO PDF ---------------------------//
 async function convertJpgToPdf(jpgPath, outputPdfPath) {
@@ -1022,11 +989,6 @@ app.post('/convert-pdf-to-excel', upload.single('pdf'), async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`✅ Server running on http://localhost:${port}`);
-});
-
-
 // ---------------------------- EXCEL TO PDF ---------------------------
 app.post('/convert-excel-to-pdf', uploadExcel.single('excel'), async (req, res) => {
   try {
@@ -1065,10 +1027,6 @@ app.post('/convert-excel-to-pdf', uploadExcel.single('excel'), async (req, res) 
     console.error('❌ Excel to PDF Error:', err);
     res.status(500).send('Conversion failed.');
   }
-});
-
-app.listen(port, () => {
-  console.log(`🚀 Server running on http://localhost:${port}`);
 });
 
 
@@ -1152,10 +1110,6 @@ app.post('/api/convert-pdf-to-ppt', upload.single('file'), async (req, res) => {
     console.error('❌ PDF to PPT error:', err);
     res.status(500).send('Failed to convert PDF to PowerPoint');
   }
-});
-
-app.listen(port, () => {
-  console.log(`🚀 Server running on http://localhost:${port}`);
 });
 // ---------------------------- POWERPOINT TO PDF ---------------------------
 app.post('/convert-powerpoint-to-pdf', uploadPPT.single('file'), async (req, res) => {
@@ -1333,10 +1287,6 @@ app.post('/split', upload.single('file'), async (req, res) => {
 // ✅ Health check
 app.get('/', (req, res) => res.send('✅ Server is running!'));
 
-app.listen(port, () => {
-  console.log(`🚀 Server running on http://localhost:${port}`);
-});
-
 
 //ORGANIZE PDF //
 app.post("/organize", upload.single("pdf"), async (req, res) => {
@@ -1429,3 +1379,8 @@ app.post('/api/add-watermark', watermarkUpload, async (req, res) => {
     res.status(500).send('Failed to add watermark');
   }
 });
+
+app.listen(port, () => {
+  console.log(`🚀 Server running on http://localhost:${port}`);
+});
+
