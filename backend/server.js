@@ -1,3 +1,5 @@
+console.log("🟢 Server.js has started. Platform:", process.platform);
+
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -1132,23 +1134,28 @@ app.post('/convert-powerpoint-to-pdf', uploadPPT.single('file'), async (req, res
   }
 });
 
-
 // ---------------------------- COMPRESS PDF ---------------------------
+
 const compressPdfWithGhostscript = (inputPath, outputPath, level) => {
   const quality = {
     extreme: '/screen',
     recommended: '/ebook'
   }[level] || '/ebook';
 
- const ghostscriptPath = process.platform === 'win32'
-  ? `"C:\\Program Files\\gs\\gs10.05.1\\bin\\gswin64c.exe"`
-  : 'gs';
- // ✅ Full path with double quotes
+  // ✅ Cross-platform Ghostscript path
+  const ghostscriptPath = process.platform === 'win32'
+    ? `"C:\\Program Files\\gs\\gs10.05.1\\bin\\gswin64c.exe"`
+    : 'gs'; // Default Linux/Unix command
 
   const command = `${ghostscriptPath} -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${quality} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${inputPath}"`;
 
-  console.log("Running command:", command); // 🐞 Optional debug
-  execSync(command);
+  console.log("🟢 Running Ghostscript Command:", command); // Debug log
+  try {
+    execSync(command);
+  } catch (err) {
+    console.error("❌ Ghostscript failed:", err.message);
+    throw new Error("Ghostscript compression failed. Make sure 'gs' is installed on Linux.");
+  }
 };
 
 app.post('/compress', uploadPDF.single('file'), async (req, res) => {
