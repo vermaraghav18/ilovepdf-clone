@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: ilovepdf-clone
-    env: docker
-    plan: free
-    autoDeploy: true
-    dockerfilePath: ./backend/Dockerfile
