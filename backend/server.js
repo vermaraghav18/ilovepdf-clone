@@ -17,8 +17,7 @@ const stringSimilarity = require("string-similarity");
 const Tesseract = require("tesseract.js");
 const { repairPdf } = require('./pdfUtils');
 const { redactPdf } = require('./redactPdf');
-const { convertPdfToPpt } = require('./pdfToPpt');
-const { pptx2pdf } = require('./utils/pptxToPdfHelper'); // ✅ Add this import
+const { convertPdfToPpt } = require('./pdfToPpt'); // ✅ Add this import
 const {
   upload,
   uploadPDF,
@@ -45,7 +44,6 @@ const archiver = require('archiver');
 const app = express();
 const port = process.env.PORT || 5000;
 
-console.log("🟢 Server.js has started. Platform:", process.platform);
 
 // ✅ Storage engine
 const storage = multer.diskStorage({
