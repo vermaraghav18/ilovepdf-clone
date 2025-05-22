@@ -1,22 +1,22 @@
-# ✅ Base image with Node.js
+# Use official Node.js base image
 FROM node:18-slim
 
-# ✅ Install Ghostscript
+# ✅ Install Ghostscript and clean up cache
 RUN apt-get update && apt-get install -y ghostscript && rm -rf /var/lib/apt/lists/*
 
-# ✅ Create app directory
+# Set working directory
 WORKDIR /app
 
-# ✅ Copy package.json and install deps
+# Copy dependencies and install them
 COPY package.json ./
 COPY package-lock.json ./
 RUN npm install
 
-# ✅ Copy the rest of the app
+# Copy the rest of the app code
 COPY . .
 
-# ✅ Expose port
+# Expose the port your app runs on
 EXPOSE 5000
 
-# ✅ Start command
+# Start the app
 CMD ["node", "server.js"]
