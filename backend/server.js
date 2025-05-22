@@ -1,4 +1,3 @@
-console.log("🟢 Server.js has started. Platform:", process.platform);
 
 const express = require('express');
 const cors = require('cors');
@@ -46,6 +45,7 @@ const archiver = require('archiver');
 const app = express();
 const port = process.env.PORT || 5000;
 
+console.log("🟢 Server.js has started. Platform:", process.platform);
 
 // ✅ Storage engine
 const storage = multer.diskStorage({
