@@ -1136,54 +1136,6 @@ app.post('/convert-powerpoint-to-pdf', uploadPPT.single('file'), async (req, res
 
 // ---------------------------- COMPRESS PDF ---------------------------
 
-const compressPdfWithGhostscript = (inputPath, outputPath, level) => {
-  const quality = {
-    extreme: '/screen',
-    recommended: '/ebook'
-  }[level] || '/ebook';
-
-  const ghostscriptPath = process.platform === 'win32'
-    ? `"C:\\Program Files\\gs\\gs10.05.1\\bin\\gswin64c.exe"`
-    : 'gs';
-
-  const command = `${ghostscriptPath} -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${quality} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${inputPath}"`;
-
-  console.log("🧪 Ghostscript path:", ghostscriptPath);
-  console.log("🧪 Full command:", command);
-
-  try {
-    execSync(command);
-  } catch (err) {
-    console.warn("⚠️ Ghostscript not available or failed on this platform.");
-    // Do not crash the server
-    return;
-  }
-};
-
-
-app.post('/compress', uploadPDF.single('file'), async (req, res) => {
-  try {
-    const { file } = req;
-    const level = req.body.level || 'recommended';
-
-    if (!file) {
-      return res.status(400).send('Please upload a PDF file.');
-    }
-
-    const inputPath = file.path;
-    const outputPath = path.join(__dirname, 'uploads', 'compressed.pdf');
-
-    compressPdfWithGhostscript(inputPath, outputPath, level);
-
-    res.download(outputPath, 'compressed.pdf', () => {
-      cleanup([inputPath, outputPath]);
-    });
-
-  } catch (err) {
-    console.error("❌ Compression error:", err.message);
-    res.status(500).send('Something went wrong while compressing the PDF.');
-  }
-});
 
 
 // ---------------------------- SPLIT PDF ---------------------------
@@ -1393,7 +1345,7 @@ app.post('/api/add-watermark', watermarkUpload, async (req, res) => {
   }
 });
 
-app.listen(port, () => {
+app.listen(port,'0.0.0.0', () => {
   console.log(`🚀 Server running on http://localhost:${port}`);
 });
 
