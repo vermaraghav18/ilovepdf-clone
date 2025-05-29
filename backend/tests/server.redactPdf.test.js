@@ -1,7 +1,7 @@
 console.log("🧪 Starting test: ONLY requiring redactPdf");
 
 try {
-  const { redactPdf } = require('./redactPdf');
+  const { redactPdf } = require('../redactPdf');
   console.log("✅ redactPdf loaded");
 } catch (err) {
   console.error("❌ redactPdf failed to load:", err);

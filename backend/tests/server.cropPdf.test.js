@@ -1,5 +1,5 @@
 console.log("🧪 Starting test: ONLY requiring cropPdf");
-const { cropPdf } = require('./cropPdf');
+const { cropPdf } = require('../cropPdf');
 console.log("✅ cropPdf loaded");
 
 const express = require('express');

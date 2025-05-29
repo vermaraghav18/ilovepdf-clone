@@ -1,5 +1,8 @@
 FROM node:18-slim
 
+# Accept build args
+ARG PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+
 # Set working directory
 WORKDIR /app/backend
 
@@ -22,7 +25,12 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy backend files
-COPY ./backend /app/backend
+COPY . /app/backend
+
+
+# Install all dependencies in one layer (including puppeteer)
+RUN npm install puppeteer@21.3.8 --save --force && \
+    npm install --legacy-peer-deps
 
 # Install dependencies
 RUN npm install

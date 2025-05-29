@@ -2,7 +2,7 @@ const os = require('os');
 console.log("🧪 Starting test: ONLY requiring pdfUtils");
 
 try {
-  require('./pdfUtils');
+  require('../pdfUtils');
   console.log("✅ pdfUtils loaded");
 } catch (err) {
   console.log("❌ pdfUtils failed:", err.message);

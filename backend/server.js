@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");  // <-- ADD THIS
 
 // 🔴 RUNTIME FOLDER SAFETY START 🔴
 const fs = require('fs');
@@ -51,6 +53,16 @@ const deleteTempFiles = require('./routes/deleteTempFiles');
 // Initialize Express
 const app = express();
 const PORT = process.env.PORT || 5000;
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: "⚠️ Too many requests from this IP. Please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(limiter);
+
 
 // Middleware
 app.use(cors());
@@ -97,8 +109,18 @@ app.use('/api/download', downloadRouter);
 app.use('/api/delete-temp', deleteTempFiles);
 app.use('/api/status', statusCheck);
 
+app.use(helmet());
+
+
+
 // Error Handler
 app.use(errorHandler);
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send("Something went wrong!");
+});
+
 
 // Start Server
 app.listen(PORT, () => {

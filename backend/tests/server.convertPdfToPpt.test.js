@@ -2,7 +2,7 @@
 console.log("🧪 Starting test: ONLY requiring convertPdfToPpt");
 
 try {
-  const { convertPdfToPpt } = require('./pdfToPpt');
+  const { convertPdfToPpt } = require('../pdfToPpt');
   console.log("✅ convertPdfToPpt loaded");
 } catch (err) {
   console.error("❌ Failed to load convertPdfToPpt");
