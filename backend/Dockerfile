@@ -31,8 +31,9 @@ RUN npm install -g pdf2json
 # 5. Copy only the backend folder
 COPY ./backend /app/backend
 
-# 🔴 FIXED: Run npm install in correct dir
-RUN npm install
+
+RUN npm install --unsafe-perm
+RUN npm rebuild puppeteer --force
 
 # 6. Expose app port
 EXPOSE 5000
