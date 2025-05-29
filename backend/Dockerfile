@@ -31,9 +31,12 @@ RUN npm install -g pdf2json
 # 5. Copy only the backend folder
 COPY ./backend /app/backend
 
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
+
 
 RUN npm install --unsafe-perm
 RUN npm rebuild puppeteer --force
+
 
 # 6. Expose app port
 EXPOSE 5000
