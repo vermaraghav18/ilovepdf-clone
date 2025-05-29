@@ -32,7 +32,7 @@ RUN npm install -g pdf2json
 COPY ./backend /app/backend
 
 # 🔴 FIXED: Run npm install in correct dir
-RUN cd /app/backend && npm install
+RUN npm install
 
 # 6. Expose app port
 EXPOSE 5000
