@@ -1986,3 +1986,13 @@ input, select, button {
   margin-top: 1rem;
   text-align: center;
 }
+
+.file-upload-block {
+  margin-bottom: 1rem;
+}
+.file-info {
+  background: #f4f4f4;
+  padding: 10px;
+  border-radius: 5px;
+  margin-top: 5px;
+}
